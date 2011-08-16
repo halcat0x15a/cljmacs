@@ -4,7 +4,7 @@
            [org.eclipse.swt.layout GridData]
            [org.eclipse.swt.widgets Text]))
 
-(defn eval-text [#^Text text]
+(defn eval-text [text]
   (let [s (try
             (load-string (.getText text))
             (catch Exception e e))]
@@ -13,7 +13,7 @@
       (.setSelection (.getCharCount text)))
     nil))
 
-(defn #^Text text [#^Composite shell]
+(defn text [shell]
   (doto (Text. shell (bit-or SWT/SINGLE SWT/BORDER))
     (.addSelectionListener
      (proxy [SelectionAdapter] []

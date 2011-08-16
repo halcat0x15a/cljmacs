@@ -1,7 +1,7 @@
 (ns cljmacs.window
   (:use [cljmacs.core :only (defconfig)]
         [cljmacs.tab :only (tabfolder tabmenu helpmenu)]
-        [cljmacs.text]
+        [cljmacs.text :only (text)]
         [cljmacs.editor :only (filemenu)]
         [cljmacs.browser :only (browsermenu)]
         [cljmacs.twitter :only (twittermenu)])
@@ -17,13 +17,13 @@
 
 (defn window []
   (doto (proxy [ApplicationWindow] [nil]
-          (configureShell [#^Shell shell]
+          (configureShell [shell]
             (let [[width height] @size]
               (doto shell
                 (.setText @title)
                 (.setSize width height))
               (proxy-super configureShell shell)))
-          (createContents [#^Composite parent]
+          (createContents [parent]
             (.setLayout parent (GridLayout. 1 false))
             (let [tabfolder (tabfolder parent)
                   text (text parent)]

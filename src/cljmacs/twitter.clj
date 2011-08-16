@@ -4,17 +4,16 @@
         [cljmacs.core]
         [cljmacs.browser :only (browser)])
   (:import [java.io FileNotFoundException ObjectInputStream ObjectOutputStream]
-           [twitter4j Twitter TwitterFactory Status]
-           [twitter4j.auth AccessToken]
+           [twitter4j Twitter TwitterFactory]
            [org.eclipse.jface.action MenuManager]
            [org.eclipse.swt SWT]
-           [org.eclipse.swt.custom CTabFolder CTabItem]
+           [org.eclipse.swt.custom CTabItem]
            [org.eclipse.swt.graphics Image]
            [org.eclipse.swt.widgets Tree TreeItem]))
 
-(def #^String consumer-key "74PPTX7J76NwkE9YN2VmWg")
+(def consumer-key "74PPTX7J76NwkE9YN2VmWg")
 
-(def #^String consumer-secret "i1O7q8yLU4rR3bsykEfd4BmXIrLBQCKn3M4UeQhw")
+(def consumer-secret "i1O7q8yLU4rR3bsykEfd4BmXIrLBQCKn3M4UeQhw")
 
 (defconfig filename ".access-token" string?)
 
@@ -26,11 +25,11 @@
 
 (defshortcut update-key [ctrl shift] \U)
 
-(defn- #^AccessToken load-access-token []
+(defn- load-access-token []
   (with-open [ois (ObjectInputStream. (input-stream @filename))]
     (.readObject ois)))
 
-(defn- store-access-token [#^AccessToken access-token]
+(defn- store-access-token [access-token]
   (with-open [oos (ObjectOutputStream. (output-stream @filename))]
     (.writeObject oos access-token)))
 
@@ -52,13 +51,13 @@
      (ref-set request-token token)
      (browser url))))
 
-(defn auth [#^String pin]
+(defn auth [pin]
   (dosync
    (let [token (.getOAuthAccessToken @twitter @request-token pin)]
      (store-access-token token)
      (alter twitter #(.setOAuthAccessToken % token)))))
 
-(defn #^TreeItem treeitem [tree #^Status status]
+(defn treeitem [tree status]
   (let [id (.getInReplyToStatusId status)
         user (.getUser status)
         item (doto (TreeItem. tree SWT/NONE 0)
@@ -73,8 +72,8 @@
 
 (defn twitter-client
   ([timeline] (twitter-client @twitter timeline))
-  ([#^Twitter twitter timeline] (twitter-client (shell) twitter timeline))
-  ([#^Shell shell #^Twitter twitter timeline]
+  ([twitter timeline] (twitter-client (shell) twitter timeline))
+  ([shell twitter timeline]
      (let [tabfolder (tabfolder)
            tabitem (doto (CTabItem. tabfolder SWT/CLOSE)
                      (.setText "Home"))
@@ -91,7 +90,7 @@
 
 (defn update
   ([] (update @twitter (shell)))
-  ([#^Twitter twitter #^Shell shell]
+  ([twitter shell]
      (domonad maybe-m
               [tree (control shell)
                item (.getItem tree 0)
@@ -100,12 +99,12 @@
               (doseq [s tl]
                 (.setSelection tree (treeitem tree s))))))
 
-(defn tweet [#^String string]
+(defn tweet [string]
   (let [twitter @twitter]
     (.updateStatus twitter string)
     (update twitter (shell))))
 
-(def #^String tweet-string "(tweet \"\")")
+(def tweet-string "(tweet \"\")")
 
 (defn tweet-text []
   (let [text (text)
@@ -116,7 +115,7 @@
       (.setSelection i))
     nil))
 
-(defn #^MenuManager twittermenu []
+(defn twittermenu []
   (doto (MenuManager. "T&witter")
     (.add (action "&Home\t" @home-key home))
     (.add (action "&Tweet\t" @tweet-key tweet-text))

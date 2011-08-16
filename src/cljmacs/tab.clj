@@ -3,14 +3,13 @@
   (:import [org.eclipse.jface.action MenuManager]
            [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabFolder CTabFolder2Adapter]
-           [org.eclipse.swt.layout GridData]
-           [org.eclipse.swt.widgets Shell]))
+           [org.eclipse.swt.layout GridData]))
 
 (defshortcut close-key [ctrl] \W)
 
 (defshortcut quit-key [ctrl alt] \Q)
 
-(defn #^CTabFolder tabfolder [#^Composite parent]
+(defn tabfolder [parent]
   (doto (CTabFolder. parent SWT/BORDER)
     (.addCTabFolder2Listener
      (proxy [CTabFolder2Adapter] []))
@@ -22,10 +21,10 @@
 (defn quit []
   (.close (shell)))
 
-(defn #^MenuManager tabmenu []
+(defn tabmenu []
   (doto (MenuManager. "&Tab")
     (.add (action "&Close\t" @close-key close-tab))
     (.add (action "&Quit\t" @quit-key quit))))
 
-(defn #^MenuManager helpmenu []
+(defn helpmenu []
   (MenuManager. "&Help"))

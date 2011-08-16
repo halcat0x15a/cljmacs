@@ -18,8 +18,8 @@
 (defshortcut save-as-key [ctrl shift] \S)
 
 (defn editor
-  ([#^String path] (editor (shell) path))
-  ([#^Shell shell #^String path]
+  ([path] (editor (shell) path))
+  ([shell path]
      (let [tabfolder (tabfolder shell)
            a (println tabfolder)
            tabitem (CTabItem. tabfolder SWT/CLOSE)
@@ -42,6 +42,7 @@
        (doto tabitem
          (.setText name)
          (.setControl text))
+
        (.setSelection tabfolder tabitem))))
 
 (defn new-file [] (editor nil))
@@ -52,7 +53,7 @@
     (if-let [path (.open dialog)]
       (editor shell path))))
 
-(defn- save-text [#^StyledText text #^String path]
+(defn- save-text [text path]
   (when-not (.getData text "saved")
     (spit path (.getText text))
     (.setData text "saved" true)))
@@ -74,7 +75,7 @@
       (save-text text path)
       (save-as shell))))
 
-(defn #^MenuManager filemenu []
+(defn filemenu []
   (doto (MenuManager. "&File")
     (.add (action "&New File\t" @new-file-key new-file))
     (.add (action "&Open\t" @open-key open))

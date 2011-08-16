@@ -13,8 +13,8 @@
 
 (defn browser
   ([] (browser (shell)))
-  ([#^Shell shell] (browser shell @homepage))
-  ([#^Shell shell #^String url]
+  ([shell] (browser shell @homepage))
+  ([shell url]
      (let [tabfolder (tabfolder shell)
            tabitem (CTabItem. tabfolder SWT/CLOSE)
            text (text shell)
@@ -39,6 +39,6 @@
        (.setControl tabitem browser)
        (.setSelection tabfolder tabitem))))
 
-(defn #^MenuManager browsermenu []
+(defn browsermenu []
   (doto (MenuManager. "&Browser")
     (.add (action "&Homepage\t" @homepage-key browser))))

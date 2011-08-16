@@ -1,12 +1,10 @@
 (ns cljmacs.core
-  (:use [clojure.java.io :only (reader)]
-        [clojure.contrib.monads])
+  (:use [clojure.java.io :only (reader)])
   (:import [org.eclipse.jface.action Action]
            [org.eclipse.swt SWT]
-           [org.eclipse.swt.custom CTabFolder CTabItem]
-           [org.eclipse.swt.widgets Display Shell Control Text]))
+           [org.eclipse.swt.widgets Display]))
 
-(defmacro defconfig [#^String name x validator]
+(defmacro defconfig [name x validator]
   `(def ~name (atom ~x :validator ~validator)))
 
 (defstruct modify-key :code :str)
@@ -19,10 +17,10 @@
 
 (def shift (struct modify-key SWT/SHIFT "Shift"))
 
-(defn #^String shortcut-key-str [shortcut-key]
+(defn shortcut-key-str [shortcut-key]
   (str (interpose "+" (map :str (conj (:mods shortcut-key) (:char shortcut-key))))))
 
-(defn #^int accelerator [shortcut-key]
+(defn accelerator [shortcut-key]
   (+ (reduce + (map :code (:mods shortcut-key))) (int (:char shortcut-key))))
 
 (defn shortcut-key? [shortcut-key]
@@ -31,31 +29,31 @@
 (defmacro defshortcut [name mods char]
   `(def ~name (ref (struct cljmacs.core/shortcut-key ~mods ~char) :validator cljmacs.core/shortcut-key?)))
 
-(defn action [#^String string shortcut-key f]
+(defn action [string shortcut-key f]
   (doto (proxy [Action] []
           (run []
             (f)))
     (.setText (str string (shortcut-key-str shortcut-key)))
     (.setAccelerator (accelerator shortcut-key))))
 
-(defn #^Shell shell [] (.getActiveShell (Display/getCurrent)))
+(defn shell [] (.getActiveShell (Display/getCurrent)))
 
-(defn #^CTabFolder tabfolder
+(defn tabfolder
   ([] (tabfolder (shell)))
-  ([#^Shell shell]
+  ([shell]
      (.getData shell "tabfolder")))
 
-(defn #^Text text
+(defn text
   ([] (text (shell)))
-  ([#^Shell shell]
+  ([shell]
      (.getData shell "text")))
 
-(defn #^CTabItem tabitem
+(defn tabitem
   ([] (tabitem (shell)))
-  ([#^Shell shell]
+  ([shell]
      (.getSelection (tabfolder shell))))
 
-(defn #^Control control
+(defn control
   ([] (control (shell)))
-  ([#^Shell shell]
+  ([shell]
      (.getControl (tabitem shell))))
