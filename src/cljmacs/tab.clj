@@ -10,22 +10,22 @@
 
 (defshortcut quit-key [ctrl alt] \Q)
 
-(defn #^CTabFolder tabfolder [#^Shell shell]
-  (doto (CTabFolder. shell SWT/BORDER)
+(defn #^CTabFolder tabfolder [#^Composite parent]
+  (doto (CTabFolder. parent SWT/BORDER)
     (.addCTabFolder2Listener
      (proxy [CTabFolder2Adapter] []))
     (.setLayoutData (GridData. SWT/FILL, SWT/FILL, true, true))))
 
-(defn close-tab [#^Shell shell]
-  (.dispose (tabitem shell)))
+(defn close-tab []
+  (.dispose (tabitem)))
 
-(defn quit [#^Shell shell]
-  (.close shell))
+(defn quit []
+  (.close (shell)))
 
-(defn #^MenuManager tabmenu [#^Shell shell]
+(defn #^MenuManager tabmenu []
   (doto (MenuManager. "&Tab")
-    (.add (action "&Close\t" @close-key #(close-tab shell)))
-    (.add (action "&Quit\t" @quit-key #(.close shell)))))
+    (.add (action "&Close\t" @close-key close-tab))
+    (.add (action "&Quit\t" @quit-key quit))))
 
-(defn #^MenuManager helpmenu [#^Shell shell]
+(defn #^MenuManager helpmenu []
   (MenuManager. "&Help"))

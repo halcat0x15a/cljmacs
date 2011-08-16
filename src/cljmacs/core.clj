@@ -20,7 +20,7 @@
 (def shift (struct modify-key SWT/SHIFT "Shift"))
 
 (defn #^String shortcut-key-str [shortcut-key]
-  (str (interpose "+" (map :str (:mods shortcut-key))) "+" (:char shortcut-key)))
+  (str (interpose "+" (map :str (conj (:mods shortcut-key) (:char shortcut-key))))))
 
 (defn #^int accelerator [shortcut-key]
   (+ (reduce + (map :code (:mods shortcut-key))) (int (:char shortcut-key))))
@@ -43,27 +43,19 @@
 (defn #^CTabFolder tabfolder
   ([] (tabfolder (shell)))
   ([#^Shell shell]
-     (domonad maybe-m
-              [children (.getChildren shell)]
-              (first children))))
+     (.getData shell "tabfolder")))
 
 (defn #^Text text
   ([] (text (shell)))
   ([#^Shell shell]
-     (domonad maybe-m
-              [children (.getChildren shell)]
-              (second children))))
+     (.getData shell "text")))
 
 (defn #^CTabItem tabitem
   ([] (tabitem (shell)))
   ([#^Shell shell]
-     (domonad maybe-m
-              [tabfolder (tabfolder shell)]
-              (.getSelection tabfolder))))
+     (.getSelection (tabfolder shell))))
 
 (defn #^Control control
   ([] (control (shell)))
   ([#^Shell shell]
-     (domonad maybe-m
-              [tabitem (tabitem shell)]
-              (.getControl tabitem))))
+     (.getControl (tabitem shell))))

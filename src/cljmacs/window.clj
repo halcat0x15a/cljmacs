@@ -9,7 +9,7 @@
            [org.eclipse.swt SWT SWTError]
            [org.eclipse.swt.layout GridLayout]
            [org.eclipse.jface.window ApplicationWindow]
-           [org.eclipse.swt.widgets Display Shell]))
+           [org.eclipse.swt.widgets Display Shell Composite]))
 
 (defconfig title "cljmacs" string?)
 
@@ -17,24 +17,25 @@
 
 (defn window []
   (doto (proxy [ApplicationWindow] [nil]
-          (configureShell [shell]
+          (configureShell [#^Shell shell]
             (let [[width height] @size]
               (doto shell
                 (.setText @title)
                 (.setSize width height))
               (proxy-super configureShell shell)))
-          (createContents [parent]
+          (createContents [#^Composite parent]
             (.setLayout parent (GridLayout. 1 false))
-            (tabfolder parent)
-            (text parent)
-            parent)
+            (let [tabfolder (tabfolder parent)
+                  text (text parent)]
+              (doto parent
+                (.setData "tabfolder" tabfolder)
+                (.setData "text" text))))
           (createMenuManager []
-            (let [shell (proxy-super getShell)]
-              (doto (MenuManager.)
-                (.add (filemenu shell))
-                (.add (tabmenu shell))
-                (.add (browsermenu shell))
-                (.add (twittermenu shell))))))
+            (doto (MenuManager.)
+              (.add (filemenu))
+              (.add (tabmenu))
+              (.add (browsermenu))
+              (.add (twittermenu)))))
     (.addMenuBar)
     (.setBlockOnOpen true)
     (.open))

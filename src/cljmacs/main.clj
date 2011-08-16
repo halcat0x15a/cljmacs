@@ -9,8 +9,7 @@
         path (str home "/" ".cljmacs.clj")
         f (file path)]
     (when (.exists f)
-      (dosync
-       (load-file path)))))
+      (load-file path))))
 
 (defn -main [& args]
   (init)

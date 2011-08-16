@@ -5,13 +5,14 @@
            [org.eclipse.swt.custom CTabFolder CTabItem]
            [org.eclipse.swt.browser Browser OpenWindowListener ProgressAdapter LocationAdapter TitleListener]))
 
-(def homepage (ref "http://google.com/" :validator string?))
+(defconfig homepage "http://google.com/" string?)
 
-(def style (ref SWT/NONE :validator integer?))
+(defconfig style SWT/NONE integer?)
 
 (defshortcut homepage-key [ctrl alt] \H)
 
 (defn browser
+  ([] (browser (shell)))
   ([#^Shell shell] (browser shell @homepage))
   ([#^Shell shell #^String url]
      (let [tabfolder (tabfolder shell)
@@ -38,6 +39,6 @@
        (.setControl tabitem browser)
        (.setSelection tabfolder tabitem))))
 
-(defn #^MenuManager browsermenu [#^Shell shell]
+(defn #^MenuManager browsermenu []
   (doto (MenuManager. "&Browser")
-    (.add (action "&Homepage\t" @homepage-key #(browser shell)))))
+    (.add (action "&Homepage\t" @homepage-key browser))))

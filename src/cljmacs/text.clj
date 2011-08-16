@@ -13,7 +13,7 @@
       (.setSelection (.getCharCount text)))
     nil))
 
-(defn text [#^Shell shell]
+(defn #^Text text [#^Composite shell]
   (doto (Text. shell (bit-or SWT/SINGLE SWT/BORDER))
     (.addSelectionListener
      (proxy [SelectionAdapter] []

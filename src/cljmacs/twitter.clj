@@ -71,9 +71,26 @@
       (treeitem item (.showStatus @twitter id)))
     item))
 
+(defn twitter-client
+  ([timeline] (twitter-client @twitter timeline))
+  ([#^Twitter twitter timeline] (twitter-client (shell) twitter timeline))
+  ([#^Shell shell #^Twitter twitter timeline]
+     (let [tabfolder (tabfolder)
+           tabitem (doto (CTabItem. tabfolder SWT/CLOSE)
+                     (.setText "Home"))
+           tree (Tree. tabfolder @style)]
+       (doseq [s (reverse timeline)]
+         (treeitem tree s))
+       (doto tabitem
+         (.setControl tree))
+       (.setSelection tabfolder tabitem))))
+
+(defn home []
+  (let [twitter @twitter]
+    (twitter-client twitter (.getHomeTimeline twitter))))
+
 (defn update
   ([] (update @twitter (shell)))
-  ([#^Shell shell] (update @twitter shell))
   ([#^Twitter twitter #^Shell shell]
      (domonad maybe-m
               [tree (control shell)
@@ -90,8 +107,8 @@
 
 (def #^String tweet-string "(tweet \"\")")
 
-(defn tweet-text [#^Shell shell]
-  (let [text (text shell)
+(defn tweet-text []
+  (let [text (text)
         i (inc (.indexOf tweet-string (int \")))]
     (doto text
       (.setText tweet-string)
@@ -99,22 +116,8 @@
       (.setSelection i))
     nil))
 
-(defn twitter-client
-  ([] (twitter-client (tabfolder)))
-  ([#^Shell shell]
-     (let [tabfolder (tabfolder shell)
-           twitter @twitter
-           tabitem (doto (CTabItem. tabfolder SWT/CLOSE)
-                     (.setText "Home"))
-           tree (Tree. tabfolder @style)]
-       (doseq [s (reverse (.getHomeTimeline twitter))]
-         (treeitem tree s))
-       (doto tabitem
-         (.setControl tree))
-       (.setSelection tabfolder tabitem))))
-
-(defn #^MenuManager twittermenu [#^Shell shell]
+(defn #^MenuManager twittermenu []
   (doto (MenuManager. "T&witter")
-    (.add (action "&Home\t" @home-key #(twitter-client shell)))
-    (.add (action "&Tweet\t" @tweet-key #(tweet-text shell)))
-    (.add (action "&Update\t" @update-key #(update shell)))))
+    (.add (action "&Home\t" @home-key home))
+    (.add (action "&Tweet\t" @tweet-key tweet-text))
+    (.add (action "&Update\t" @update-key update))))

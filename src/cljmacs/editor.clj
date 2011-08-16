@@ -1,6 +1,5 @@
 (ns cljmacs.editor
   (:use [clojure.java.io :only (reader file)]
-        [clojure.contrib.monads]
         [cljmacs.core])
   (:import [org.eclipse.jface.action MenuManager]
            [org.eclipse.swt SWT]
@@ -8,7 +7,7 @@
            [org.eclipse.swt.events VerifyListener]
            [org.eclipse.swt.widgets FileDialog]))
 
-(def style (ref (bit-or SWT/MULTI SWT/BORDER)))
+(defconfig style (bit-or SWT/MULTI SWT/BORDER) integer?)
 
 (defshortcut new-file-key [ctrl] \N)
 
@@ -19,9 +18,10 @@
 (defshortcut save-as-key [ctrl shift] \S)
 
 (defn editor
-  ([#^Shell shell] (editor shell nil))
+  ([#^String path] (editor (shell) path))
   ([#^Shell shell #^String path]
      (let [tabfolder (tabfolder shell)
+           a (println tabfolder)
            tabitem (CTabItem. tabfolder SWT/CLOSE)
            name (if (nil? path)
                   "Undefined"
@@ -44,39 +44,39 @@
          (.setControl text))
        (.setSelection tabfolder tabitem))))
 
-(defn new-file [#^Shell shell] (editor shell))
+(defn new-file [] (editor nil))
 
-(defn open [#^Shell shell]
-  (let [dialog (FileDialog. shell SWT/OPEN)]
-    (domonad maybe-m
-             [path (.open dialog)]
-             (editor shell path))))
+(defn open []
+  (let [shell (shell)
+        dialog (FileDialog. shell SWT/OPEN)]
+    (if-let [path (.open dialog)]
+      (editor shell path))))
 
 (defn- save-text [#^StyledText text #^String path]
   (when-not (.getData text "saved")
     (spit path (.getText text))
     (.setData text "saved" true)))
 
-(defn save-as [#^Shell shell]
-  (let [dialog (FileDialog. shell SWT/SAVE)]
-    (domonad maybe-m
-             [path (.open dialog)
-              tabitem (tabitem shell)
-              text (.getControl tabitem)]
-             (do
-               (save-text text path)
-               (.setData text "path" path)
-               (.setText tabitem path)))))
+(defn save-as []
+  (let [shell (shell)
+        dialog (FileDialog. shell SWT/SAVE)]
+    (if-let [path (.open dialog)]
+      (let [tabitem (tabitem shell)
+            text (.getControl tabitem)]
+        (save-text text path)
+        (.setData text "path" path)
+        (.setText tabitem path)))))
 
-(defn save [#^Shell shell]
-  (let [text (control shell)]
+(defn save []
+  (let [shell (shell)
+        text (control shell)]
     (if-let [path (.getData text "path")]
       (save-text text path)
       (save-as shell))))
 
-(defn #^MenuManager filemenu [#^Shell shell]
+(defn #^MenuManager filemenu []
   (doto (MenuManager. "&File")
-    (.add (action "&New File\t" @new-file-key #(new-file shell)))
-    (.add (action "&Open\t" @open-key #(open shell)))
-    (.add (action "&Save\t" @save-key #(save shell)))
-    (.add (action "&Save As\t" @save-as-key #(save-as shell)))))
+    (.add (action "&New File\t" @new-file-key new-file))
+    (.add (action "&Open\t" @open-key open))
+    (.add (action "&Save\t" @save-key save))
+    (.add (action "&Save As\t" @save-as-key save-as))))
