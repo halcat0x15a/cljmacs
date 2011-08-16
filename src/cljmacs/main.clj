@@ -2,7 +2,7 @@
   (:gen-class)
   (:use [clojure.java.io :only (file)]
         [cljmacs.core]
-        [cljmacs.frame :only (new-frame)]))
+        [cljmacs.window :only (window)]))
 
 (defn- init []
   (let [home (System/getProperty "user.home")
@@ -14,4 +14,4 @@
 
 (defn -main [& args]
   (init)
-  (new-frame))
+  (window))

@@ -4,9 +4,9 @@
         [cljmacs.core]
         [cljmacs.browser :only (browser)])
   (:import [java.io FileNotFoundException ObjectInputStream ObjectOutputStream]
-           [clojure.lang Ref]
            [twitter4j Twitter TwitterFactory Status]
            [twitter4j.auth AccessToken]
+           [org.eclipse.jface.action MenuManager]
            [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabFolder CTabItem]
            [org.eclipse.swt.graphics Image]
@@ -16,9 +16,15 @@
 
 (def #^String consumer-secret "i1O7q8yLU4rR3bsykEfd4BmXIrLBQCKn3M4UeQhw")
 
-(def #^Ref filename (ref ".access-token" :validator string?))
+(defconfig filename ".access-token" string?)
 
-(def #^Ref style (ref (bit-or SWT/MULTI SWT/BORDER) :validator integer?))
+(defconfig style (bit-or SWT/MULTI SWT/BORDER) integer?)
+
+(defshortcut home-key [ctrl shift] \H)
+
+(defshortcut tweet-key [ctrl shift] \T)
+
+(defshortcut update-key [ctrl shift] \U)
 
 (defn- #^AccessToken load-access-token []
   (with-open [ois (ObjectInputStream. (input-stream @filename))]
@@ -28,7 +34,7 @@
   (with-open [oos (ObjectOutputStream. (output-stream @filename))]
     (.writeObject oos access-token)))
 
-(def #^Ref twitter
+(def twitter
   (ref
    (let [twitter (doto (.getInstance (TwitterFactory.))
                    (.setOAuthConsumer consumer-key consumer-secret))]
@@ -37,7 +43,7 @@
          (.setOAuthAccessToken (load-access-token)))
        (catch FileNotFoundException _ twitter)))))
 
-(def #^Ref request-token (ref nil))
+(def request-token (ref nil))
 
 (defn login []
   (dosync
@@ -106,3 +112,9 @@
        (doto tabitem
          (.setControl tree))
        (.setSelection tabfolder tabitem))))
+
+(defn #^MenuManager twittermenu [#^Shell shell]
+  (doto (MenuManager. "T&witter")
+    (.add (action "&Home\t" @home-key #(twitter-client shell)))
+    (.add (action "&Tweet\t" @tweet-key #(tweet-text shell)))
+    (.add (action "&Update\t" @update-key #(update shell)))))
