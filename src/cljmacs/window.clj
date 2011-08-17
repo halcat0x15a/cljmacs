@@ -8,8 +8,7 @@
   (:import [org.eclipse.jface.action MenuManager]
            [org.eclipse.swt SWT SWTError]
            [org.eclipse.swt.layout GridLayout]
-           [org.eclipse.jface.window ApplicationWindow]
-           [org.eclipse.swt.widgets Display Shell Composite]))
+           [org.eclipse.jface.window ApplicationWindow]))
 
 (defconfig title "cljmacs" string?)
 
@@ -37,6 +36,4 @@
               (.add (browsermenu))
               (.add (twittermenu)))))
     (.addMenuBar)
-    (.setBlockOnOpen true)
-    (.open))
-  (.dispose (Display/getCurrent)))
+    (.setBlockOnOpen true)))

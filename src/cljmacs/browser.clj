@@ -41,4 +41,4 @@
 
 (defn browsermenu []
   (doto (MenuManager. "&Browser")
-    (.add (action "&Homepage\t" @homepage-key browser))))
+    (.add (action "&Homepage\t" browser @homepage-key))))

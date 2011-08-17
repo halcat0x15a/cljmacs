@@ -77,7 +77,7 @@
 
 (defn filemenu []
   (doto (MenuManager. "&File")
-    (.add (action "&New File\t" @new-file-key new-file))
-    (.add (action "&Open\t" @open-key open))
-    (.add (action "&Save\t" @save-key save))
-    (.add (action "&Save As\t" @save-as-key save-as))))
+    (.add (action "&New File\t" new-file @new-file-key))
+    (.add (action "&Open\t" open @open-key))
+    (.add (action "&Save\t" save @save-key))
+    (.add (action "&Save As\t" save-as @save-as-key))))

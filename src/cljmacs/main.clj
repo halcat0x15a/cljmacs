@@ -2,15 +2,17 @@
   (:gen-class)
   (:use [clojure.java.io :only (file)]
         [cljmacs.core]
-        [cljmacs.window :only (window)]))
+        [cljmacs.window :only (window)])
+  (:import [org.eclipse.swt.widgets Display]))
 
 (defn- init []
   (let [home (System/getProperty "user.home")
-        path (str home "/" ".cljmacs.clj")
-        f (file path)]
-    (when (.exists f)
+        path (str home "/" ".cljmacs.clj")]
+    (when (.exists (file path))
       (load-file path))))
 
 (defn -main [& args]
   (init)
-  (window))
+  (doto (window)
+    (.open))
+  (.dispose (Display/getCurrent)))

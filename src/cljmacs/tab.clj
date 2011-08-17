@@ -23,8 +23,8 @@
 
 (defn tabmenu []
   (doto (MenuManager. "&Tab")
-    (.add (action "&Close\t" @close-key close-tab))
-    (.add (action "&Quit\t" @quit-key quit))))
+    (.add (action "&Close\t" close-tab @close-key))
+    (.add (action "&Quit\t" quit @quit-key))))
 
 (defn helpmenu []
   (MenuManager. "&Help"))

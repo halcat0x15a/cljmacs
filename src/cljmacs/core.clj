@@ -27,14 +27,20 @@
   (and (vector? (:mods shortcut-key)) (char? (:char shortcut-key))))
 
 (defmacro defshortcut [name mods char]
-  `(def ~name (ref (struct cljmacs.core/shortcut-key ~mods ~char) :validator cljmacs.core/shortcut-key?)))
+  `(defconfig ~name (struct cljmacs.core/shortcut-key ~mods ~char) cljmacs.core/shortcut-key?))
 
-(defn action [string shortcut-key f]
-  (doto (proxy [Action] []
-          (run []
-            (f)))
-    (.setText (str string (shortcut-key-str shortcut-key)))
-    (.setAccelerator (accelerator shortcut-key))))
+(defn action
+  ([string f] (action string f nil))
+  ([string f shortcut-key]
+     (let [action (proxy [Action] []
+                    (run []
+                      (f)))]
+     (if shortcut-key
+       (doto action
+         (.setText (str string (shortcut-key-str shortcut-key)))
+         (.setAccelerator (accelerator shortcut-key)))
+       (doto action
+         (.setText string))))))
 
 (defn shell [] (.getActiveShell (Display/getCurrent)))
 
