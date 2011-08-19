@@ -1,12 +1,13 @@
 (ns cljmacs.twitter
   (:use [clojure.java.io :only (input-stream output-stream)]
+        [clojure.string :only (join)]
         [cljmacs.core]
         [cljmacs.browser :only (browser)])
   (:import [java.io FileNotFoundException ObjectInputStream ObjectOutputStream]
            [twitter4j Twitter TwitterFactory TwitterException StatusUpdate]
            [org.eclipse.swt SWT]
-           [org.eclipse.swt.custom CTabItem]
-           [org.eclipse.swt.events SelectionAdapter TreeListener]
+           [org.eclipse.swt.custom CTabItem TreeEditor StyledText StyleRange]
+           [org.eclipse.swt.events SelectionAdapter TreeAdapter]
            [org.eclipse.swt.graphics Image]
            [org.eclipse.swt.widgets Tree TreeItem]))
 
@@ -16,7 +17,7 @@
 
 (defconfig filename ".access-token" string?)
 
-(defstyle twitter-style SWT/MULTI SWT/BORDER)
+(defstyle twitter-style SWT/MULTI SWT/BORDER SWT/FULL_SELECTION)
 
 (defshortcut home-key [ctrl shift] \H)
 
@@ -28,16 +29,6 @@
 
 (defshortcut fav-key [ctrl shift] \F)
 
-(def twitter
-  (let [twitter (doto (.getInstance (TwitterFactory.))
-          (.setOAuthConsumer consumer-key consumer-secret))]
-    (try
-      (doto twitter
-        (.setOAuthAccessToken (load-access-token)))
-      (catch FileNotFoundException _
-        (login)
-        twitter))))
-
 (defn- load-access-token []
   (with-open [ois (ObjectInputStream. (input-stream @filename))]
     (.readObject ois)))
@@ -45,6 +36,14 @@
 (defn- store-access-token [access-token]
   (with-open [oos (ObjectOutputStream. (output-stream @filename))]
     (.writeObject oos access-token)))
+
+(def twitter
+  (let [twitter (doto (.getInstance (TwitterFactory.))
+          (.setOAuthConsumer consumer-key consumer-secret))]
+    (try
+      (doto twitter
+        (.setOAuthAccessToken (load-access-token)))
+      (catch FileNotFoundException _ twitter))))
 
 (def request-token (ref nil))
 
@@ -55,42 +54,56 @@
      (ref-set request-token token)
      (browser url))))
 
-(defn pin []
+(defn pin [code]
   (dosync
-   (let [token @request-token
-         text (text)
-         string (.getText text)]
+   (let [access-token (.getOAuthAccessToken twitter @request-token code)]
      (ref-set request-token nil)
-     (store-access-token (.getOAuthAccessToken twitter token string)))))
+     (store-access-token access-token)
+     (alter twitter #(.setOAuthAccessToken %)))))
 
-(defn treeitem [tree status]
-  (doto (TreeItem. tree SWT/NONE 0)
-    (.setData status)
-    (.setImage (Image. (.getDisplay tree) (input-stream (.getProfileImageURL (.getUser status)))))
-    (.setText (.getText status))))
+(defn make-color [color]
+  (let [display (.getDisplay @shell)
+        parse #(Integer/parseInt % 16)
+        [r g b] (map (comp parse join) (partition 2 color))]
+    (Color. display r g b)))
 
-(defn set-treeitem [tree status]
-  (let [item (treeitem tree status)
+(defn make-styled-text [parent tree-item]
+  (doto (StyledText. parent SWT/NONE)
+    (.setEditable false)
+    (.setText (.getText tree-item))))
+
+(defn make-tree-item [tree status]
+  (let [display (.getDisplay tree)
+        user (.getUser status)
+        screen-name (.getScreenName user)
+        name (.getName user)
+        text (.getText status)
+        string (str screen-name \space name \newline text)
+        image (Image. display (input-stream (.. status getUser getProfileImageURL)))]
+    (doto (TreeItem. tree SWT/NONE 0)
+      (.setData status)
+      (.setImage image)
+      (.setText string))))
+
+(defn set-tree-item [tree status]
+  (let [item (make-tree-item tree status)
         id (.getInReplyToStatusId status)]
     (when-let [rt (.getRetweetedStatus status)]
-      (treeitem item rt))
+      (make-tree-item item rt))
     (when (not= id -1)
-      (treeitem item (.showStatus (twitter) id)))
+      (make-tree-item item (.showStatus twitter id)))
     item))
 
-(defn update
-  ([] (update @shell))
-  ([shell]
-     (let [tree (.. (tab-folder) getSelection getControl)
-           item (.getItem tree 0)
-           data (.getData item)
-           tl (reverse (take-while #(not= data %) (.getHomeTimeline twitter)))]
-       (doseq [s tl]
-         (.setSelection tree (set-treeitem tree s))))))
+(defn update []
+  (let [tree (.. (tab-folder) getSelection getControl)
+        item (.getItem tree 0)
+        data (.getData item)
+        tl (reverse (take-while #(not= data %) (.getHomeTimeline twitter)))]
+    (doseq [s tl]
+      (.setSelection tree (set-tree-item tree s)))))
 
 (defn tweet []
-  (let [shell @shell
-        text (text shell)
+  (let [text (text)
         id (.getData text "status_id")
         status (StatusUpdate. (.getText text))]
     (when id
@@ -101,34 +114,33 @@
 
 (defwidget twitter-client [string timeline]
   (fn [tab-folder tab-item]
-     (let [tree (doto (Tree. tab-folder @twitter-style)
-                  (.addSelectionListener (proxy [SelectionAdapter] []
-                                           (widgetDefaultSelected [e]
-                                             (let [status (.getData (.item e))
-                                                   user (.getUser status)
-                                                   name (.getName user)
-                                                   text (text)]
-                                               (doto text
-                                                 (.setData "status_id" (.getId status))
-                                                 (.setText name)
-                                                 (.setSelection (.getCharCount text)))))))
-                  (.addTreeListener (proxy [TreeListener] []
-                                      (treeExpanded [e]
-                                        (let [item (.getItem (.item e) 0)
-                                              status (.getData item)
-                                              id (.getInReplyToStatusId status)]
-                                          (when (not= id -1)
-                                            (treeitem item (.showStatus twitter id))))))))]
-       (doseq [status (reverse timeline)]
-         (set-treeitem tree status))
-       [tree string])))
+    (let [tree (doto (Tree. tab-folder @twitter-style)
+                 (.addTreeListener (proxy [TreeAdapter] []
+                                     (treeExpanded [e]
+                                       (let [item (.getItem (.item e) 0)
+                                             status (.getData item)
+                                             id (.getInReplyToStatusId status)]
+                                         (when (not= id -1)
+                                           (make-tree-item item (.showStatus twitter id))))))))
+          tree-editor (TreeEditor. tree)]
+      (set! (.grabHorizontal tree-editor) true)
+      (.addSelectionListener tree (proxy [SelectionAdapter] []
+                                    (widgetSelected [e]
+                                      (if-let [editor (.getEditor tree-editor)]
+                                        (.dispose editor))
+                                      (let [item (.item e)
+                                            styled-text (make-styled-text tree item)]
+                                        (.setEditor tree-editor styled-text item)))))
+      (doseq [status (reverse timeline)]
+        (set-tree-item tree status))
+      [tree string])))
 
 (defn home []
   (twitter-client "Home" (.getHomeTimeline twitter)))
 
 (defmacro doitems [meth]
   `(let [tree# (.. (tab-folder) getSelection getControl)
-         twitter# (twitter)
+         twitter# twitter
          items# (reverse (.getSelection tree#))]
      (doseq [item# items#]
        (. twitter# ~meth (.getId (.getData item#))))))
@@ -143,7 +155,4 @@
     (make-menu-item menu "&Tweet" tweet @tweet-key)
     (make-menu-item menu "&Update" update @update-key)
     (make-menu-item menu "&Retweet" retweet @retweet-key)
-    (make-menu-item menu "&Fav" fav @fav-key)
-    (make-separator menu)
-    (make-menu-item menu "&Login" login)
-    (make-menu-item menu "&PIN" pin)))
+    (make-menu-item menu "&Fav" fav @fav-key)))
