@@ -4,10 +4,10 @@
         [cljmacs.core]
         [cljmacs.browser :only (browser)])
   (:import [java.io FileNotFoundException ObjectInputStream ObjectOutputStream]
-           [twitter4j Twitter TwitterFactory TwitterException StatusUpdate]
+           [twitter4j Twitter TwitterFactory TwitterException Paging StatusUpdate Query]
            [org.eclipse.swt SWT]
-           [org.eclipse.swt.custom CTabItem TreeEditor StyledText StyleRange]
-           [org.eclipse.swt.events SelectionAdapter TreeAdapter]
+           [org.eclipse.swt.custom CTabItem TreeEditor StyledText StyleRange VerifyKeyListener]
+           [org.eclipse.swt.events SelectionAdapter TreeAdapter MouseAdapter]
            [org.eclipse.swt.graphics Image]
            [org.eclipse.swt.widgets Tree TreeItem]))
 
@@ -61,16 +61,33 @@
      (store-access-token access-token)
      (alter twitter #(.setOAuthAccessToken %)))))
 
-(defn make-color [color]
-  (let [display (.getDisplay @shell)
-        parse #(Integer/parseInt % 16)
-        [r g b] (map (comp parse join) (partition 2 color))]
-    (Color. display r g b)))
+(def search)
 
 (defn make-styled-text [parent tree-item]
-  (doto (StyledText. parent SWT/NONE)
-    (.setEditable false)
-    (.setText (.getText tree-item))))
+  (let [status (.getData tree-item)
+        url-entities (.getURLEntities status)
+        hashtag-entities (.getHashtagEntities status)
+        text (.getText tree-item)]
+    (letfn [(open-url [e]
+              (let [widget (.widget e)
+                    offset (- (.getCaretOffset widget) (.getOffsetAtLine widget 1))]
+                (letfn [(entity-fn [entities f]
+                          (doseq [entity entities]
+                            (let [start (inc (.getStart entity))
+                                  end (.getEnd entity)]
+                              (when (some #(= % offset) (range start end))
+                                (f entity)))))]
+                  (entity-fn url-entities #(browser (str (.getURL %))))
+                  (entity-fn hashtag-entities #(search (.getText %))))))]
+      (doto (StyledText. parent SWT/NONE)
+        (.addMouseListener (proxy [MouseAdapter] []
+                             (mouseDown [e]
+                               (open-url e))))
+        (.addVerifyKeyListener (proxy [VerifyKeyListener] []
+                                 (verifyKey [e]
+                                   (open-url e))))
+        (.setEditable false)
+        (.setText text)))))
 
 (defn make-tree-item [tree status]
   (let [display (.getDisplay tree)
@@ -78,8 +95,9 @@
         screen-name (.getScreenName user)
         name (.getName user)
         text (.getText status)
+        url (.getProfileImageURL user)
         string (str screen-name \space name \newline text)
-        image (Image. display (input-stream (.. status getUser getProfileImageURL)))]
+        image (Image. display (input-stream url))]
     (doto (TreeItem. tree SWT/NONE 0)
       (.setData status)
       (.setImage image)
@@ -97,10 +115,14 @@
 (defn update []
   (let [tree (.. (tab-folder) getSelection getControl)
         item (.getItem tree 0)
-        data (.getData item)
-        tl (reverse (take-while #(not= data %) (.getHomeTimeline twitter)))]
-    (doseq [s tl]
-      (.setSelection tree (set-tree-item tree s)))))
+        status (.getData item)
+        id (.getId status)
+        function (.getData tree "function")
+        query (doto (.getData tree "query")
+                (.setSinceId id))
+        timeline (reverse (function query))]
+    (doseq [status timeline]
+      (.setSelection tree (set-tree-item tree status)))))
 
 (defn tweet []
   (let [text (text)
@@ -112,7 +134,7 @@
     (.setText text "")
     (update)))
 
-(defwidget twitter-client [string timeline]
+(defwidget twitter-client [string function query]
   (fn [tab-folder tab-item]
     (let [tree (doto (Tree. tab-folder @twitter-style)
                  (.addTreeListener (proxy [TreeAdapter] []
@@ -121,22 +143,33 @@
                                              status (.getData item)
                                              id (.getInReplyToStatusId status)]
                                          (when (not= id -1)
-                                           (make-tree-item item (.showStatus twitter id))))))))
+                                           (make-tree-item item (.showStatus twitter id)))))))
+                 (.setData "function" function)
+                 (.setData "query" query))
           tree-editor (TreeEditor. tree)]
       (set! (.grabHorizontal tree-editor) true)
       (.addSelectionListener tree (proxy [SelectionAdapter] []
                                     (widgetSelected [e]
                                       (if-let [editor (.getEditor tree-editor)]
-                                        (.dispose editor))
+                                        (.dispose editor)))
+                                    (widgetDefaultSelected [e]
                                       (let [item (.item e)
                                             styled-text (make-styled-text tree item)]
                                         (.setEditor tree-editor styled-text item)))))
-      (doseq [status (reverse timeline)]
+      (doseq [status (reverse (function query))]
         (set-tree-item tree status))
       [tree string])))
 
 (defn home []
-  (twitter-client "Home" (.getHomeTimeline twitter)))
+  (twitter-client "Home" #(.getHomeTimeline twitter %) (Paging.)))
+
+(defn search
+  ([] (let [text (text)]
+        (search (.getText text))))
+  ([string]
+     (let [query (Query. string)
+           status #(.showStatus twitter (.getId %))]
+       (twitter-client string #(map status (.. twitter (search %) getTweets)) query))))
 
 (defmacro doitems [meth]
   `(let [tree# (.. (tab-folder) getSelection getControl)
