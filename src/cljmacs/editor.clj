@@ -68,4 +68,4 @@
     (make-menu-item menu "&New File" new-file @new-file-key)
     (make-menu-item menu "&Open" open @open-key)
     (make-menu-item menu "&Save" save @save-key)
-    (make-menu-item menu "&Save As" save-as @save-as-key)))
+    (make-menu-item menu "Save &As" save-as @save-as-key)))

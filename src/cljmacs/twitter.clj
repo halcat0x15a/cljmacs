@@ -23,11 +23,17 @@
 
 (defshortcut tweet-key [ctrl shift] \T)
 
+(defshortcut reply-key [ctrl shift] \R)
+
+(defshortcut cancel-key [ctrl shift] \C)
+
 (defshortcut update-key [ctrl shift] \U)
 
-(defshortcut retweet-key [ctrl shift] \R)
+(defshortcut retweet-key [ctrl alt shift] \R)
 
-(defshortcut fav-key [ctrl shift] \F)
+(defshortcut fav-key [ctrl alt shift] \F)
+
+(defshortcut search-key [ctrl alt shift] \S )
 
 (defn- load-access-token []
   (with-open [ois (ObjectInputStream. (input-stream @filename))]
@@ -124,15 +130,41 @@
     (doseq [status timeline]
       (.setSelection tree (set-tree-item tree status)))))
 
-(defn tweet []
-  (let [text (text)
-        id (.getData text "status_id")
-        status (StatusUpdate. (.getText text))]
-    (when id
-      (.setInReplyToStatusId status id))
-    (.updateStatus twitter status)
-    (.setText text "")
-    (update)))
+(defn cancel []
+  (doto (text)
+    (.setText "")
+    (.setData "status_id" nil)))
+
+(defn tweet
+  ([]
+     (let [text (text)
+           string (.getText text)]
+       (tweet string)))
+  ([string]
+     (if-let [string string]
+       (let [text (text)
+             status (StatusUpdate. string)]
+         (if-let [id (.getData text "status_id")]
+           (.setInReplyToStatusId status id))
+         (.updateStatus twitter status)
+         (cancel)
+         (update)))))
+
+(defn reply []
+  (let [tree (.. (tab-folder) getSelection getControl)
+        text (text)
+        item (first (.getSelection tree))
+        status (.getData item)
+        id (.getId status)
+        user (.getUser status)
+        name (.getScreenName user)
+        string (str \@ name \space)]
+    (doto text
+      (.setData "status_id" id)
+      (.setText string)
+      (.setSelection (.getCharCount text))
+      (.setFocus))
+    nil))
 
 (defwidget twitter-client [string function query]
   (fn [tab-folder tab-item]
@@ -160,8 +192,32 @@
         (set-tree-item tree status))
       [tree string])))
 
+(defmacro timeline-method [name method & arg]
+  `(twitter-client ~name #(. twitter ~method ~@arg %) (Paging.)))
+
 (defn home []
-  (twitter-client "Home" #(.getHomeTimeline twitter %) (Paging.)))
+  (timeline-method "Home" getHomeTimeline))
+
+(defn mentions []
+  (timeline-method "Mentions" getMentions))
+
+(defn retweeted-by-me []
+  (timeline-method "Retweeted By Me" getRetweetedByMe))
+
+(defn retweeted-to-me []
+  (timeline-method "Retweeted To Me" getRetweetedToMe))
+
+(defn retweets-of-me []
+  (timeline-method "Retweets Of Me" getRetweetsOfMe))
+
+(defn retweeted-by-user [name]
+  (timeline-method (str "Retweeted By " name) getRetweetedByUser name))
+
+(defn retweeted-to-user [name]
+  (timeline-method (str "Retweeted To " name) getRetweetedToUser name))
+
+(defn user [name]
+  (timeline-method name getUserTimeline name))
 
 (defn search
   ([] (let [text (text)]
@@ -170,6 +226,9 @@
      (let [query (Query. string)
            status #(.showStatus twitter (.getId %))]
        (twitter-client string #(map status (.. twitter (search %) getTweets)) query))))
+
+(defn user-list [name id]
+  (timeline-method name getUserListStatuses id))
 
 (defmacro doitems [meth]
   `(let [tree# (.. (tab-folder) getSelection getControl)
@@ -185,7 +244,26 @@
 (defmenu twitter-menu "T&witter"
   (fn [menu]
     (make-menu-item menu "&Home" home @home-key)
+    (make-separator menu)
     (make-menu-item menu "&Tweet" tweet @tweet-key)
+    (make-menu-item menu "&Reply" reply @reply-key)
+    (make-menu-item menu "&Cancel" cancel @cancel-key)
     (make-menu-item menu "&Update" update @update-key)
-    (make-menu-item menu "&Retweet" retweet @retweet-key)
-    (make-menu-item menu "&Fav" fav @fav-key)))
+    (make-separator menu)
+    (make-menu-item menu "R&etweet" retweet @retweet-key)
+    (make-menu-item menu "&Fav" fav @fav-key)
+    (make-separator menu)
+    (make-menu-item menu "&Search" search @search-key)
+    (make-separator menu)
+    (make-menu-item menu "&Mentions" mentions)
+    (make-menu-item menu "&Retweeted By Me" retweeted-by-me)
+    (make-menu-item menu "&Retweeted To Me" retweeted-to-me)
+    (make-menu-item menu "&Retweets Of Me" retweets-of-me)
+    (make-separator menu)
+    (if-let [access-token (.getOAuthAccessToken twitter)]
+      (let [id (.getUserId access-token)
+            lists (.getAllUserLists twitter id)]
+        (doseq [list lists]
+          (let [name (.getName list)
+                id (.getId list)]
+            (make-menu-item menu name #(user-list name id))))))))
