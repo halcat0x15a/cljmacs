@@ -4,7 +4,7 @@
         [cljmacs.core]
         [cljmacs.browser :only (browser)])
   (:import [java.io FileNotFoundException ObjectInputStream ObjectOutputStream]
-           [twitter4j Twitter TwitterFactory TwitterException Paging StatusUpdate Query]
+           [twitter4j Twitter TwitterFactory TwitterStreamFactory UserStreamAdapter TwitterException Paging StatusUpdate Query]
            [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabItem TreeEditor StyledText StyleRange VerifyKeyListener]
            [org.eclipse.swt.events SelectionAdapter TreeAdapter MouseAdapter]
@@ -51,6 +51,20 @@
         (.setOAuthAccessToken (load-access-token)))
       (catch FileNotFoundException _ twitter))))
 
+(def twitter-stream
+  (let [access-token (.getOAuthAccessToken twitter)
+        factory (TwitterStreamFactory.)
+        user-stream (proxy [UserStreamAdapter] []
+                      (.onStatus [s]
+                        (println s)))
+        twitter-stream (doto (.getInstance factory)
+                         (.addListener user-stream)
+                         (.setOAuthConsumer consumer-key consumer-secret))]
+    (if access-token
+      (doto twitter-stream
+        (.setOAuthAccessToken access-token))
+      twitter-stream)))
+
 (def request-token (ref nil))
 
 (defn login []
@@ -74,7 +88,7 @@
         url-entities (.getURLEntities status)
         hashtag-entities (.getHashtagEntities status)
         text (.getText tree-item)]
-    (letfn [(open-url [e]
+    (letfn [(open [e]
               (let [widget (.widget e)
                     offset (- (.getCaretOffset widget) (.getOffsetAtLine widget 1))]
                 (letfn [(entity-fn [entities f]
@@ -88,12 +102,23 @@
       (doto (StyledText. parent SWT/NONE)
         (.addMouseListener (proxy [MouseAdapter] []
                              (mouseDown [e]
-                               (open-url e))))
+                               (open e))))
         (.addVerifyKeyListener (proxy [VerifyKeyListener] []
                                  (verifyKey [e]
-                                   (open-url e))))
+                                   (open e))))
         (.setEditable false)
         (.setText text)))))
+
+(comment
+(defn set-icon [tree-item status]
+  (let [display (.getDisplay @shell)
+        retweet? (.isRetweetedByMe status)
+        favorited? (.isFavorited status)
+        set-icon #(.setText tree-item (str (.getText tree-item) \newline %))]
+    (cond (and retweet? favorited?) (set-icon "RT☆")
+          retweet? (set-icon "RT")
+          favorited? (set-icon "☆"))))
+)
 
 (defn make-tree-item [tree status]
   (let [display (.getDisplay tree)
@@ -103,11 +128,13 @@
         text (.getText status)
         url (.getProfileImageURL user)
         string (str screen-name \space name \newline text)
-        image (Image. display (input-stream url))]
-    (doto (TreeItem. tree SWT/NONE 0)
+        image (Image. display (input-stream url))
+        tree-item (TreeItem. tree SWT/NONE 0)]
+    (doto tree-item
       (.setData status)
       (.setImage image)
-      (.setText string))))
+      (.setText string))
+    tree-item))
 
 (defn set-tree-item [tree status]
   (let [item (make-tree-item tree status)
@@ -119,10 +146,8 @@
     item))
 
 (defn update []
-  (let [tree (.. (tab-folder) getSelection getControl)
-        item (.getItem tree 0)
-        status (.getData item)
-        id (.getId status)
+  (let [tree (control)
+        id (.. tree (getItem 0) getData getId)
         function (.getData tree "function")
         query (doto (.getData tree "query")
                 (.setSinceId id))
@@ -151,7 +176,7 @@
          (update)))))
 
 (defn reply []
-  (let [tree (.. (tab-folder) getSelection getControl)
+  (let [tree (control)
         text (text)
         item (first (.getSelection tree))
         status (.getData item)
@@ -171,9 +196,8 @@
     (let [tree (doto (Tree. tab-folder @twitter-style)
                  (.addTreeListener (proxy [TreeAdapter] []
                                      (treeExpanded [e]
-                                       (let [item (.getItem (.item e) 0)
-                                             status (.getData item)
-                                             id (.getInReplyToStatusId status)]
+                                       (let [item (.. e item (getItem 0))
+                                             id (.. item getData getInReplyToStatusId)]
                                          (when (not= id -1)
                                            (make-tree-item item (.showStatus twitter id)))))))
                  (.setData "function" function)
@@ -187,7 +211,8 @@
                                     (widgetDefaultSelected [e]
                                       (let [item (.item e)
                                             styled-text (make-styled-text tree item)]
-                                        (.setEditor tree-editor styled-text item)))))
+                                        (.setEditor tree-editor styled-text item)
+                                        (.deselect tree item)))))
       (doseq [status (reverse (function query))]
         (set-tree-item tree status))
       [tree string])))

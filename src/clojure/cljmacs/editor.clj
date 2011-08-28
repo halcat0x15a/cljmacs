@@ -51,11 +51,13 @@
 (defn save-as []
   (let [dialog (FileDialog. @shell SWT/SAVE)]
     (if-let [path (.open dialog)]
-      (let [tabitem (.getSelection (tab-folder))
-            text (.getControl tabitem)]
-        (save-text text path)
-        (.setData text "path" path)
-        (.setText tabitem path)))))
+      (if (.isFile (file path))
+        (let [tabitem (.getSelection (tab-folder))
+              text (.getControl tabitem)]
+          (save-text text path)
+          (.setData text "path" path)
+          (.setText tabitem path))
+        (message (str path " is not file."))))))
 
 (defn save []
   (let [text (.getControl (.getSelection (tab-folder)))]

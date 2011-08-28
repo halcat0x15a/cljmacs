@@ -5,7 +5,7 @@
 
 (defconfig homepage "http://google.com/" string?)
 
-(defconfig browser-style SWT/NONE integer?)
+(defstyle browser-style SWT/NONE)
 
 (defshortcut open-homepage-key [ctrl alt] \H)
 
@@ -17,14 +17,12 @@
           browser (doto (Browser. tab-folder @browser-style)
                     (.addLocationListener (proxy [LocationAdapter] []
                                             (changed [e]
-                                              (doto text
-                                                (.setText (.location e))))))
+                                              (message (.location e)))))
                     (.addTitleListener (proxy [TitleListener] []
                                          (changed [e]
                                            (doto tab-item
                                              (.setText (.title e))))))
-                    (.addProgressListener
-                     (proxy [ProgressAdapter] []))
+                    (.addProgressListener (proxy [ProgressAdapter] []))
                     (.setUrl url))]
       [browser ""])))
 

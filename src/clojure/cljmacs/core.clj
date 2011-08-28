@@ -13,6 +13,9 @@
 (defmacro defstyle [name & styles]
   `(defconfig ~name (+ ~@styles) integer?))
 
+(defmacro defcolor [name color]
+  `(defconfig ~name ~color integer?))
+
 (defstruct modify-key :code :str)
 
 (defstruct shortcut-key :mods :char)
@@ -40,6 +43,8 @@
 (defn tab-folder [] (first (.getChildren @shell)))
 
 (defn text [] (second (.getChildren @shell)))
+
+(defn control [] (.. (tab-folder) getSelection getControl))
 
 (defn make-tab-item [tab-folder] (CTabItem. tab-folder SWT/CLOSE))
 
@@ -83,3 +88,8 @@
        (.setAccelerator (accelerator key)))))
 
 (defn make-separator [menu] (MenuItem. menu SWT/SEPARATOR))
+
+(defn message [string]
+  (let [text (text)
+        display (.getDisplay text)]
+    (.setText text (str \" string \"))))
