@@ -3,93 +3,55 @@
   (:import [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabItem]
            [org.eclipse.swt.events SelectionAdapter]
-           [org.eclipse.swt.widgets Menu MenuItem]))
+           [cljmacs ModifierKey ShortcutKey Widget ControlProxy Menu MenuProxy Utils]))
 
-(defn boolean? [b] (or (true? b) (false? b)))
-
-(defmacro defconfig [name x validator]
-  `(def ~name (atom ~x :validator ~validator)))
+(defmacro defconfig [name x]
+  (let [config (Utils/configuration)
+        key (str (ns-name *ns*) "." name)
+        set-property #(.setProperty config key %)
+        create-name #(symbol (str % "-" name))]
+    (when-not (.containsKey config key)
+      (set-property x))
+    `(do
+       (def ~name (ref ~x))
+       (defn ~(create-name "get") [] (deref ~name))
+       (defn ~(create-name "set") [value#]
+         (dosync
+          (~set-property value#)
+          (ref-set ~name value#))))))
 
 (defmacro defstyle [name & styles]
-  `(defconfig ~name (+ ~@styles) integer?))
+  `(defconfig ~name (+ ~@styles)))
 
-(defmacro defcolor [name color]
-  `(defconfig ~name ~color integer?))
+(def ctrl (ModifierKey/ctrl))
 
-(defstruct modify-key :code :str)
+(def alt (ModifierKey/alt))
 
-(defstruct shortcut-key :mods :char)
-
-(def ctrl (struct modify-key SWT/CONTROL "Ctrl"))
-
-(def alt (struct modify-key SWT/ALT "Alt"))
-
-(def shift (struct modify-key SWT/SHIFT "Shift"))
-
-(defn str-shortcut-key [shortcut-key]
-  (clojure.string/join (interpose "+" (conj (vec (map :str (:mods shortcut-key))) (:char shortcut-key)))))
-
-(defn accelerator [shortcut-key]
-  (apply + (conj (map :code (:mods shortcut-key)) (int (:char shortcut-key)))))
-
-(defn shortcut-key? [shortcut-key]
-  (and (vector? (:mods shortcut-key)) (char? (:char shortcut-key))))
+(def shift (ModifierKey/shift))
 
 (defmacro defshortcut [name mods char]
-  `(defconfig ~name (struct shortcut-key ~mods ~char) shortcut-key?))
+  `(defconfig ~name (ShortcutKey. (into-array ModifierKey ~mods) ~char)))
 
-(def shell (ref nil))
-
-(defn tab-folder [] (first (.getChildren @shell)))
-
-(defn text [] (second (.getChildren @shell)))
-
-(defn control [] (.. (tab-folder) getSelection getControl))
-
-(defn make-tab-item [tab-folder] (CTabItem. tab-folder SWT/CLOSE))
+(def current-frame (ref nil))
 
 (defmacro defwidget [name params body]
   `(defn ~name ~params
-     (let [tab-folder# (tab-folder)
-           tab-item# (make-tab-item tab-folder#)
-           [control# name#] (~body tab-folder# tab-item#)]
-       (doto tab-item#
-         (.setControl control#)
-         (.setText name#))
-       (.setSelection tab-folder# tab-item#))))
-
-(defn make-menu [shell menu-bar string index]
-  (let [menu (Menu. shell SWT/DROP_DOWN)]
-    (doto (MenuItem. menu-bar SWT/CASCADE index)
-      (.setText string)
-      (.setMenu menu))
-    menu))
+     (let [tab-folder# (.tab_folder @current-frame)
+           control# (proxy [ControlProxy] []
+                     (control [tab-folder# tab-item#]
+                       (~body tab-folder# tab-item#)))]
+       (Widget. tab-folder# control#))))
 
 (defmacro defmenu [name string body]
-  `(defn ~name [index#]
-     (let [shell# @shell
-           menu-bar# (.getMenuBar shell#)
-           menu# (make-menu shell# menu-bar# ~string index#)]
-       (~body menu#)
-       menu#)))
-
-(defn make-menu-item
-  ([menu function]
-    (doto (MenuItem. menu SWT/PUSH)
-      (.addSelectionListener (proxy [SelectionAdapter] []
-                                (widgetSelected [_]
-                                  (function))))))
-  ([menu text function]
-     (doto (make-menu-item menu function)
-       (.setText text)))
-  ([menu text function key]
-     (doto (make-menu-item menu function)
-       (.setText (str text \tab (str-shortcut-key key)))
-       (.setAccelerator (accelerator key)))))
-
-(defn make-separator [menu] (MenuItem. menu SWT/SEPARATOR))
+  `(defn ~name
+     ([] (~name 0))
+     ([index#]
+        (let [menu# (proxy [MenuProxy] []
+                      (create [menu#]
+                        (~body menu#)))]
+          (Menu. @current-frame index# ~string menu#)))))
 
 (defn message [string]
-  (let [text (text)
+  (let [text (.getText @current-frame)
         display (.getDisplay text)]
     (.setText text (str \" string \"))))

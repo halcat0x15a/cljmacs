@@ -4,7 +4,8 @@
   (:import [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabItem StyledText]
            [org.eclipse.swt.events VerifyListener]
-           [org.eclipse.swt.widgets FileDialog]))
+           [org.eclipse.swt.widgets FileDialog]
+           [cljmacs MenuItem]))
 
 (defstyle editor-style SWT/MULTI SWT/BORDER)
 
@@ -17,7 +18,7 @@
 (defshortcut save-as-key [ctrl shift] \S)
 
 (defwidget editor [path]
-  (fn [tab-folder tabitem]
+  (fn [tab-folder tab-item]
     (let [name (if (nil? path)
                  "Undefined"
                  path)
@@ -34,12 +35,14 @@
                  (.setText string)
                  (.setData "saved" true)
                  (.setData "path" path))]
-      [text name])))
+      (doto tab-item
+        (.setText name))
+      text)))
 
 (defn new-file [] (editor nil))
 
 (defn open []
-  (let [dialog (FileDialog. @shell SWT/OPEN)]
+  (let [dialog (FileDialog. (.shell @current-frame) SWT/OPEN)]
     (if-let [path (.open dialog)]
       (editor path))))
 
@@ -49,10 +52,10 @@
     (.setData text "saved" true)))
 
 (defn save-as []
-  (let [dialog (FileDialog. @shell SWT/SAVE)]
+  (let [dialog (FileDialog. (.shell @current-frame) SWT/SAVE)]
     (if-let [path (.open dialog)]
       (if (.isFile (file path))
-        (let [tabitem (.getSelection (tab-folder))
+        (let [tabitem (.tab-item @current-frame)
               text (.getControl tabitem)]
           (save-text text path)
           (.setData text "path" path)
@@ -60,14 +63,14 @@
         (message (str path " is not file."))))))
 
 (defn save []
-  (let [text (.getControl (.getSelection (tab-folder)))]
+  (let [text (.control @current-frame)]
     (if-let [path (.getData text "path")]
       (save-text text path)
       (save-as))))
 
 (defmenu file-menu "&File"
   (fn [menu]
-    (make-menu-item menu "&New File" new-file @new-file-key)
-    (make-menu-item menu "&Open" open @open-key)
-    (make-menu-item menu "&Save" save @save-key)
-    (make-menu-item menu "Save &As" save-as @save-as-key)))
+    (MenuItem. menu "&New File" new-file @new-file-key)
+    (MenuItem. menu "&Open" open @open-key)
+    (MenuItem. menu "&Save" save @save-key)
+    (MenuItem. menu "Save &As" save-as @save-as-key)))

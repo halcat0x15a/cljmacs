@@ -5,4 +5,7 @@ pom.xml
 .lein-deps-sum
 *~
 *#*#
-.log
+*.log
+*.jad
+*.class
+*.access-token

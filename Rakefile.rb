@@ -1,12 +1,27 @@
 require 'rake'
+require 'rake/testtask'
 require 'mirah'
 
+libs = ['lib/swt.jar',
+        'lib/commons-configuration-1.6.jar',
+        'lib/commons-lang3-3.0.1.jar']
+
+src = 'src/mirah'
+
+classpath = Mirah::Env.encode_paths(libs)
+
 task :compile do
-  Mirah.compile('-c', 'lib/swt.jar', '-d', 'classes', 'src/mirah')
+  Mirah.compile('-c', classpath, '--cd', src, '-d', '../../classes', '.')
 end
 
 task :java do
-  Mirah.compile('-j', '-c', 'lib/swt.jar', '--cd', 'src/mirah', '-d', '../java', '.')
+  Mirah.compile('-j', '-c', classpath, '--cd', src, '-d', '../java', '.')
 end
 
-task :default => :compile
+Rake::TestTask.new do |t|
+  $CLASSPATH << 'classes'
+  libs.each do |l|
+    $CLASSPATH << l
+  end
+  t.test_files = FileList['test/mirah/cljmacs/test/test*.rb']
+end
