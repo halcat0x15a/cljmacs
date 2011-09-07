@@ -10,6 +10,7 @@ class ModifierKey
     @string = string
   end
 
+  $Override
   def toString
     @string
   end

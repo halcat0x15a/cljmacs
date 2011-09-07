@@ -3,8 +3,10 @@ require 'rake/testtask'
 require 'mirah'
 
 libs = ['lib/swt.jar',
+        'lib/swt-gtk-linux-x86-3.5.2.jar',
         'lib/commons-configuration-1.6.jar',
-        'lib/commons-lang3-3.0.1.jar']
+#        'lib/commons-lang3-3.0.1.jar',
+        'lib/commons-lang-2.4.jar']
 
 src = 'src/mirah'
 
