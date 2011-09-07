@@ -4,10 +4,7 @@ import org.apache.commons.configuration.*
 
 class Utils
   def self.configuration
-    if @config == nil
-      @config = create_config
-    end
-    @config
+    @config = create_config if @config == nil
   end
 
   private
