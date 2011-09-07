@@ -12,6 +12,7 @@ class ShortcutKey
     a += @key_char
   end
 
+  $Override
   def toString
     str = ''
     @modifiers.each do |m|
