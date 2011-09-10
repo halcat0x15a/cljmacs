@@ -28,7 +28,7 @@
   (ShortcutKey. character (into-array ModifierKey modifiers)))
 
 (defmacro defshortcut [name character & modifiers]
-  `(defproperty ~name (apply create-shortcut-key ~character  ~modifiers)))
+  `(defproperty ~name (create-shortcut-key ~character ~@modifiers)))
 
 (defn current-frame [] (Frame/current_frame))
 

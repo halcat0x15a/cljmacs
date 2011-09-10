@@ -10,9 +10,9 @@
 
 (defproperty simple false)
 
-(defshortcut close [ctrl] \W)
+(defshortcut close \W ctrl)
 
-(defshortcut quit [ctrl alt] \Q)
+(defshortcut quit \Q ctrl alt)
 
 (defn close-tab []
   (let [tab-item (.tab_item (current-frame))]

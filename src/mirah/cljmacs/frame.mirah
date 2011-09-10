@@ -21,9 +21,9 @@ class Frame
     @shell = Shell.new display
     @shell.setLayout GridLayout.new 1, false
     @shell.setText config.getString ns + "title"
-    array = config.getStringArray ns + "size"
+    list = config.getList ns + "size"
     size = int[2]
-    0.upto(1) { |i| size[i] = Integer.parseInt(array[i]) }
+    0.upto(1) { |i| size[i] = Integer(list.get(i)).intValue }
     @shell.setSize size[0], size[1]
     @menu_bar = SWTMenu.new @shell, SWT.BAR
     @shell.setMenuBar @menu_bar
