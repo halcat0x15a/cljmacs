@@ -4,45 +4,31 @@
            [org.eclipse.swt.events SelectionAdapter]
            [cljmacs Frame]))
 
-(defconfig title "cljmacs")
+(defproperty title "cljmacs")
 
-(defconfig size [400 300])
+(defproperty size [400 300])
 
-(defconfig simple false)
+(defproperty simple false)
 
-(defshortcut close-key [ctrl] \W)
+(defshortcut close [ctrl] \W)
 
-(defshortcut quit-key [ctrl alt] \Q)
+(defshortcut quit [ctrl alt] \Q)
 
 (defn close-tab []
-  (.dispose (.tab_item @current-frame)))
+  (let [tab-item (.tab_item (current-frame))]
+    (.dispose tab-item)))
 
 (defn quit []
-  (.close (.shell @current-frame)))
+  (.close (.shell (current-frame))))
 
-(defn eval-text [text]
-  (let [x (try
-            (load-string (.getText text))
-            (catch Exception e e))]
-    (doto text
-      (.setText (str x))
-      (.setSelection (.getCharCount text)))
-    nil))
+(defn eval-text
+  ([] (eval-text (.control (current-frame))))
+  ([text]
+     (let [value (try
+                   (load-string (.getText text))
+                   (catch Exception e e))]
+       (.setText text (str value))
+       (end-of-line text))))
 
 (defn make-frame [display]
-  (dosync
-   (let [frame (Frame. display)
-         shell (.shell frame)
-         [width height] @size
-         tab-folder (.tab_folder frame)
-         text (.text frame)]
-     (doto shell
-       (.setText @title)
-       (.setSize width height))
-     (doto tab-folder
-       (.setSimple @simple))
-     (doto text
-       (.addSelectionListener (proxy [SelectionAdapter] []
-                                (widgetDefaultSelected [e]
-                                  (eval-text (.widget e))))))
-     (ref-set current-frame frame))))
+  (Frame. display eval-text))

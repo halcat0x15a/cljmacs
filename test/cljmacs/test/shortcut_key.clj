@@ -4,10 +4,10 @@
   (:import [org.eclipse.swt SWT]
            [cljmacs ModifierKey ShortcutKey]))
 
-(deftest accelerator
-  (let [shortcut-key (ShortcutKey. (into-array ModifierKey [(ModifierKey/ctrl)]) \F)]
-    (is (+ SWT/CTRL (int \F)) (.accelerator shortcut-key))))
-
-(deftest to-string
-  (let [shortcut-key (ShortcutKey. (into-array ModifierKey [(ModifierKey/ctrl) (ModifierKey/shift)]) \S)]
-    (is "Ctrl+Shift+S" (.toString shortcut-key))))
+(deftest shortcut-key
+  (let [shortcut-key (create-shortcut-key \S ctrl shift)]
+    (testing "shortcut key"
+      (testing "has accelerator"
+        (is (= (+ SWT/CTRL SWT/SHIFT (int \S)) (.accelerator shortcut-key))))
+      (testing "has string"
+        (is (= "Ctrl+Shift+S" (.toString shortcut-key)))))))

@@ -1,27 +1,22 @@
 (ns cljmacs.core
   (:require [clojure.string])
   (:import [org.eclipse.swt SWT]
-           [org.eclipse.swt.custom CTabItem]
-           [org.eclipse.swt.events SelectionAdapter]
-           [cljmacs ModifierKey ShortcutKey Widget ControlProxy Menu MenuProxy Utils]))
+           [cljmacs Property ModifierKey ShortcutKey Frame Widget Menu]))
 
-(defmacro defconfig [name x]
-  (let [config (Utils/configuration)
-        key (str (ns-name *ns*) "." name)
-        set-property #(.setProperty config key %)
-        create-name #(symbol (str % "-" name))]
-    (when-not (.containsKey config key)
-      (set-property x))
-    `(do
-       (def ~name (ref ~x))
-       (defn ~(create-name "get") [] (deref ~name))
-       (defn ~(create-name "set") [value#]
-         (dosync
-          (~set-property value#)
-          (ref-set ~name value#))))))
+(defn create-key [name]
+  (str (ns-name *ns*) '. name))
+
+(defn create-property [key value]
+  (Property. (create-key key) value))
+
+(defmacro defproperty
+  ([name value]
+     `(defproperty ~name ~value '~name))
+  ([name value key]
+     `(def ~name (create-property ~key ~value))))
 
 (defmacro defstyle [name & styles]
-  `(defconfig ~name (+ ~@styles)))
+  `(defproperty ~name (+ ~@styles) (str 'style '. '~name)))
 
 (def ctrl (ModifierKey/ctrl))
 
@@ -29,29 +24,35 @@
 
 (def shift (ModifierKey/shift))
 
-(defmacro defshortcut [name mods char]
-  `(defconfig ~name (ShortcutKey. (into-array ModifierKey ~mods) ~char)))
+(defn create-shortcut-key [character & modifiers]
+  (ShortcutKey. character (into-array ModifierKey modifiers)))
 
-(def current-frame (ref nil))
+(defmacro defshortcut [name character & modifiers]
+  `(defproperty ~name (apply create-shortcut-key ~character  ~modifiers)))
+
+(defn current-frame [] (Frame/current_frame))
 
 (defmacro defwidget [name params body]
   `(defn ~name ~params
-     (let [tab-folder# (.tab_folder @current-frame)
-           control# (proxy [ControlProxy] []
-                     (control [tab-folder# tab-item#]
+     (let [tab-folder# (.tab_folder (current-frame))
+           widget# (proxy [Widget] []
+                     (createControl [tab-folder# tab-item#]
                        (~body tab-folder# tab-item#)))]
-       (Widget. tab-folder# control#))))
+       (doto widget#
+         (.create tab-folder# control#)))))
 
 (defmacro defmenu [name string body]
   `(defn ~name
      ([] (~name 0))
      ([index#]
-        (let [menu# (proxy [MenuProxy] []
-                      (create [menu#]
+        (let [menu# (proxy [Menu] []
+                      (createMenu [menu#]
                         (~body menu#)))]
-          (Menu. @current-frame index# ~string menu#)))))
+          (doto menu#
+            (.create (current-frame) index# ~string))))))
 
-(defn message [string]
-  (let [text (.getText @current-frame)
-        display (.getDisplay text)]
-    (.setText text (str \" string \"))))
+(defn end-of-line
+  ([]
+     (end-of-line (.control (current-frame))))
+  ([text]
+     (.setSelection text (.getCharCount text))))

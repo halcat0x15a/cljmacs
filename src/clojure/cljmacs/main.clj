@@ -3,8 +3,9 @@
   (:use [clojure.java.io :only (file)]
         [cljmacs.core]
         [cljmacs.frame])
-  (:import [org.apache.commons.lang3 SystemUtils]
-           [org.eclipse.swt.widgets Display]))
+  (:import [org.apache.commons.lang SystemUtils]
+           [org.eclipse.swt.widgets Display Shell]
+           [cljmacs Frame]))
 
 (defn load-cljmacs []
   (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")]
@@ -14,8 +15,8 @@
 (defn -main [& args]
   (let [display (Display.)]
     (try
-      (let [frame (make-frame display)
-            shell (.shell frame)]
+      (let [#^Frame frame (make-frame display)
+            #^Shell shell (.shell frame)]
         (load-cljmacs)
         (.open shell)
         (while (not (.isDisposed shell))

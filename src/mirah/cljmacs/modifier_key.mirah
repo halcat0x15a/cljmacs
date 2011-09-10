@@ -5,11 +5,6 @@ class ModifierKey
 
   attr_reader :key_code
 
-  def initialize(key_code: int, string: String)
-    @key_code = key_code
-    @string = string
-  end
-
   $Override
   def toString
     @string
@@ -25,5 +20,11 @@ class ModifierKey
 
   def self.shift
     ModifierKey.new SWT.SHIFT, 'Shift'
+  end
+
+  private
+  def initialize(key_code: int, string: String)
+    @key_code = key_code
+    @string = string
   end
 end

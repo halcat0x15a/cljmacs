@@ -1,5 +1,5 @@
 class ShortcutKey
-  def initialize(modifiers: ModifierKey[], key_char: char)
+  def initialize(key_char: char, modifiers: ModifierKey[])
     @modifiers = modifiers
     @key_char = key_char
   end
