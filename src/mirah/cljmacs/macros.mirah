@@ -21,7 +21,7 @@ interface Macros do
   macro def attr_writer(name_node, type)
     name = name_node.string_value
     quote do
-      def `"#{name}="`(value:`type`)
+      def `"#{name}_set"`(value:`type`)
         @`name` = value
       end
     end

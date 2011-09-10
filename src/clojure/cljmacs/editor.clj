@@ -5,19 +5,27 @@
            [org.eclipse.swt.custom CTabItem StyledText]
            [org.eclipse.swt.events VerifyListener]
            [org.eclipse.swt.widgets FileDialog]
-           [cljmacs MenuItem]))
+           [cljmacs MenuItem Editor]))
 
 (defstyle editor-style SWT/MULTI SWT/BORDER)
 
-(defshortcut new-file-key [ctrl] \N)
+(defshortcut new-file-key \N ctrl)
 
-(defshortcut open-key [ctrl] \O)
+(defshortcut open-key \O ctrl)
 
-(defshortcut save-key [ctrl] \S)
+(defshortcut save-key \S ctrl)
 
-(defshortcut save-as-key [ctrl shift] \S)
+(defshortcut save-as-key \S ctrl shift)
 
-(defwidget editor [path]
+(defshortcut cut-key \X ctrl)
+
+(defshortcut copy-key \C ctrl)
+
+(defshortcut paste-key \V ctrl)
+
+(defn current-editor [] (Editor/current-editor))
+
+(defwidget new-editor [path]
   (fn [tab-folder tab-item]
     (let [name (if (nil? path)
                  "Undefined"
@@ -25,52 +33,61 @@
           string (if (nil? path)
                    ""
                    (slurp path))
-          text (doto (StyledText. tab-folder @editor-style)
-                 (.addVerifyListener
-                  (proxy [VerifyListener] []
-                    (verifyText [e]
-                      (let [text (.widget e)]
-                        (when (.getData text "saved")
-                          (.setData text "saved" false))))))
-                 (.setText string)
-                 (.setData "saved" true)
-                 (.setData "path" path))]
+          editor (Editor. tab-folder path string)
+          text (.text editor)]
       (doto tab-item
         (.setText name))
       text)))
 
-(defn new-file [] (editor nil))
+(defn new-file [] (new-editor nil))
 
 (defn open []
-  (let [dialog (FileDialog. (.shell @current-frame) SWT/OPEN)]
+  (let [dialog (FileDialog. (.shell (current-frame)) SWT/OPEN)]
     (if-let [path (.open dialog)]
-      (editor path))))
+      (new-editor path))))
 
-(defn- save-text [text path]
-  (when-not (.getData text "saved")
-    (spit path (.getText text))
-    (.setData text "saved" true)))
+(defn- save-text [editor path]
+  (when-not (.saved editor)
+    (prn "hello")
+    (spit path (.getText (.text editor)))
+    (.saved_set editor true)))
 
 (defn save-as []
-  (let [dialog (FileDialog. (.shell @current-frame) SWT/SAVE)]
+  (let [dialog (FileDialog. (.shell (current-frame)) SWT/SAVE)]
     (if-let [path (.open dialog)]
       (if (.isFile (file path))
-        (let [tabitem (.tab-item @current-frame)
-              text (.getControl tabitem)]
-          (save-text text path)
-          (.setData text "path" path)
+        (let [tabitem (.tab_item (current-frame))
+              editor (current-editor)]
+          (save-text editor path)
+          (.path_set editor path)
           (.setText tabitem path))
         (message (str path " is not file."))))))
 
 (defn save []
-  (let [text (.control @current-frame)]
-    (if-let [path (.getData text "path")]
-      (save-text text path)
+  (let [editor (current-editor)]
+    (if-let [path (.path editor)]
+      (save-text editor path)
       (save-as))))
+
+(defmacro defaction [action]
+  `(defn ~action []
+     (.. (current-editor) text ~action)))
+
+(defaction cut)
+
+(defaction copy)
+
+(defaction paste)
 
 (defmenu file-menu "&File"
   (fn [menu]
-    (MenuItem. menu "&New File" new-file @new-file-key)
-    (MenuItem. menu "&Open" open @open-key)
-    (MenuItem. menu "&Save" save @save-key)
-    (MenuItem. menu "Save &As" save-as @save-as-key)))
+    (make-menu-item menu "&New File" new-file new-file-key)
+    (make-menu-item menu "&Open" open open-key)
+    (make-menu-item menu "&Save" save save-key)
+    (make-menu-item menu "Save &As" save-as save-as-key)))
+
+(defmenu edit-menu "&Edit"
+  (fn [menu]
+    (make-menu-item menu "&Cut" cut cut-key)
+    (make-menu-item menu "&Copy" copy copy-key)
+    (make-menu-item menu "&Paste" paste paste-key)))

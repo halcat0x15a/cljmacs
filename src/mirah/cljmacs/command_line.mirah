@@ -19,4 +19,8 @@ class CommandLine
       end
     end
   end
+
+  def message(string: String): void
+    @text.setText(string)
+  end
 end

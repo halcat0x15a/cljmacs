@@ -1,7 +1,7 @@
 (ns cljmacs.core
   (:require [clojure.string])
   (:import [org.eclipse.swt SWT]
-           [cljmacs Property ModifierKey ShortcutKey Frame Widget Menu]))
+           [cljmacs Property ModifierKey ShortcutKey Frame Widget Menu MenuItem]))
 
 (defn create-key [name]
   (str (ns-name *ns*) '. name))
@@ -9,14 +9,11 @@
 (defn create-property [key value]
   (Property. (create-key key) value))
 
-(defmacro defproperty
-  ([name value]
-     `(defproperty ~name ~value '~name))
-  ([name value key]
-     `(def ~name (create-property ~key ~value))))
+(defmacro defproperty [name value]
+  `(def ~name (create-property '~name ~value)))
 
 (defmacro defstyle [name & styles]
-  `(defproperty ~name (+ ~@styles) (str 'style '. '~name)))
+  `(defproperty ~name (+ ~@styles)))
 
 (def ctrl (ModifierKey/ctrl))
 
@@ -39,17 +36,23 @@
                      (createControl [tab-folder# tab-item#]
                        (~body tab-folder# tab-item#)))]
        (doto widget#
-         (.create tab-folder# control#)))))
+         (.create tab-folder#)))))
 
 (defmacro defmenu [name string body]
   `(defn ~name
-     ([] (~name 0))
+     ([] (~name (count (.. (current-frame) menu_bar getItems))))
      ([index#]
         (let [menu# (proxy [Menu] []
                       (createMenu [menu#]
                         (~body menu#)))]
           (doto menu#
             (.create (current-frame) index# ~string))))))
+
+(defn make-menu-item [menu name fn property]
+  (MenuItem. menu name fn (.value property)))
+
+(defn message [string]
+  (.message (.text (.command_line (current-frame)))))
 
 (defn end-of-line
   ([]

@@ -5,10 +5,10 @@ class Property
 
   def initialize(key: String, value: dynamic)
     @key = key
-    value_set value
+    self.value = value
   end
 
-  def value=(value: dynamic): void
+  def value_set(value: dynamic): void
     Configuration.get_configuration.setProperty @key, value
     @value = value
   end

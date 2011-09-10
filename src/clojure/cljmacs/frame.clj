@@ -22,7 +22,7 @@
   (.close (.shell (current-frame))))
 
 (defn eval-text
-  ([] (eval-text (.control (current-frame))))
+  ([] (eval-text (.text (.command_line (current-frame)))))
   ([text]
      (let [value (try
                    (load-string (.getText text))

@@ -14,8 +14,7 @@ class Frame
   attr_reader :command_line
 
   def initialize(display: Display, eval_fn: Runnable)
-    raise Exception.new if @frame != nil
-    @frame = self
+    @@frame = self
     ns = "cljmacs.frame."
     config = Configuration.get_configuration
     @shell = Shell.new display
@@ -23,7 +22,7 @@ class Frame
     @shell.setText config.getString ns + "title"
     list = config.getList ns + "size"
     size = int[2]
-    0.upto(1) { |i| size[i] = Integer(list.get(i)).intValue }
+    0.upto(1) { |i| size[i] = Integer.parseInt(list.get(i).toString) }
     @shell.setSize size[0], size[1]
     @menu_bar = SWTMenu.new @shell, SWT.BAR
     @shell.setMenuBar @menu_bar
@@ -34,7 +33,7 @@ class Frame
   end
 
   def self.current_frame
-    @frame
+    @@frame
   end
 
   def tab_item
