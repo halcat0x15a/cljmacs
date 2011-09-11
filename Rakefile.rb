@@ -14,8 +14,4 @@ task :compile do
   Mirah.compile('-c', classpath, '--cd', src, '-d', '../../classes', '.')
 end
 
-task :java do
-  Mirah.compile('-j', '-c', classpath, '--cd', src, '-d', '../java', '.')
-end
-
 task :default => :compile

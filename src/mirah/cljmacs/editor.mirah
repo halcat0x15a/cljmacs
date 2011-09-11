@@ -5,9 +5,9 @@ class Editor
 
   attr_reader :text
   attr_accessor :saved, :boolean
-  attr_accessor :path, :String
+  attr_reader :path
 
-  def initialize(tab_folder: CTabFolder, path: String, string: String)
+  def initialize(tab_folder: CTabFolder, tab_item: CTabItem, path: String, string: String)
     @@editor = self
     @saved = true
     @path = path
@@ -18,9 +18,16 @@ class Editor
     @text.addVerifyListener do |e|
       Editor.current_editor.saved = false
     end
+    @tab_item = tab_item
   end
 
   def self.current_editor
     @@editor
+  end
+
+  def save(path: String)
+    @saved = true
+    @path = path
+    @tab_item.setText(path)
   end
 end

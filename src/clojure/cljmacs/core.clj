@@ -51,8 +51,10 @@
 (defn make-menu-item [menu name fn property]
   (MenuItem. menu name fn (.value property)))
 
+(defn make-separator [menu] (MenuItem/separator menu))
+
 (defn message [string]
-  (.message (.text (.command_line (current-frame)))))
+  (.message (.command_line (current-frame)) string))
 
 (defn end-of-line
   ([]

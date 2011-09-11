@@ -5,7 +5,7 @@
            [org.eclipse.swt.custom CTabItem StyledText]
            [org.eclipse.swt.events VerifyListener]
            [org.eclipse.swt.widgets FileDialog]
-           [cljmacs MenuItem Editor]))
+           [cljmacs Editor]))
 
 (defstyle editor-style SWT/MULTI SWT/BORDER)
 
@@ -23,6 +23,8 @@
 
 (defshortcut paste-key \V ctrl)
 
+(defshortcut select-all-key \A ctrl)
+
 (defn current-editor [] (Editor/current-editor))
 
 (defwidget new-editor [path]
@@ -33,7 +35,7 @@
           string (if (nil? path)
                    ""
                    (slurp path))
-          editor (Editor. tab-folder path string)
+          editor (Editor. tab-folder tab-item path string)
           text (.text editor)]
       (doto tab-item
         (.setText name))
@@ -48,20 +50,22 @@
 
 (defn- save-text [editor path]
   (when-not (.saved editor)
-    (prn "hello")
     (spit path (.getText (.text editor)))
-    (.saved_set editor true)))
+    (.save editor)))
 
 (defn save-as []
   (let [dialog (FileDialog. (.shell (current-frame)) SWT/SAVE)]
     (if-let [path (.open dialog)]
-      (if (.isFile (file path))
-        (let [tabitem (.tab_item (current-frame))
-              editor (current-editor)]
-          (save-text editor path)
-          (.path_set editor path)
-          (.setText tabitem path))
-        (message (str path " is not file."))))))
+      (let [file (file path)
+            editor (current-editor)
+            save (fn []
+                   (save-text editor path)
+                   (.path_set editor path))]
+        (if (.exists file)
+          (if (.isFile file)
+            (save)
+            (message (str path " is not file.")))
+          (save))))))
 
 (defn save []
   (let [editor (current-editor)]
@@ -69,20 +73,23 @@
       (save-text editor path)
       (save-as))))
 
-(defmacro defaction [action]
-  `(defn ~action []
+(defmacro defaction [name action]
+  `(defn ~name []
      (.. (current-editor) text ~action)))
 
-(defaction cut)
+(defaction cut cut)
 
-(defaction copy)
+(defaction copy copy)
 
-(defaction paste)
+(defaction paste paste)
+
+(defaction select-all selectAll)
 
 (defmenu file-menu "&File"
   (fn [menu]
     (make-menu-item menu "&New File" new-file new-file-key)
     (make-menu-item menu "&Open" open open-key)
+    (make-separator menu)
     (make-menu-item menu "&Save" save save-key)
     (make-menu-item menu "Save &As" save-as save-as-key)))
 
@@ -90,4 +97,6 @@
   (fn [menu]
     (make-menu-item menu "&Cut" cut cut-key)
     (make-menu-item menu "&Copy" copy copy-key)
-    (make-menu-item menu "&Paste" paste paste-key)))
+    (make-menu-item menu "&Paste" paste paste-key)
+    (make-separator menu)
+    (make-menu-item menu "&Select All" select-all select-all-key)))
