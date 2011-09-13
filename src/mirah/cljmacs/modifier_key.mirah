@@ -1,9 +1,9 @@
 import org.eclipse.swt.SWT
 
 class ModifierKey
-  implements Macros
-
-  attr_reader :key_code
+  def key_code
+    @key_code
+  end
 
   $Override
   def toString

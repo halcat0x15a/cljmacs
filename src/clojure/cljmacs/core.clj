@@ -1,13 +1,15 @@
 (ns cljmacs.core
   (:require [clojure.string])
-  (:import [org.eclipse.swt SWT]
-           [cljmacs Property ModifierKey ShortcutKey Frame Widget Menu MenuItem]))
+  (:import [clojure.lang IDeref]
+           [org.eclipse.swt SWT]
+           [cljmacs Property ModifierKey ShortcutKey Widget Menu]))
 
 (defn create-key [name]
   (str (ns-name *ns*) '. name))
 
 (defn create-property [key value]
-  (Property. (create-key key) value))
+  (proxy [Property IDeref] [(create-key key) value]
+    (deref [] value)))
 
 (defmacro defproperty [name value]
   `(def ~name (create-property '~name ~value)))
@@ -27,37 +29,18 @@
 (defmacro defshortcut [name character & modifiers]
   `(defproperty ~name (create-shortcut-key ~character ~@modifiers)))
 
-(defn current-frame [] (Frame/current_frame))
-
-(defmacro defwidget [name params body]
+(defmacro defwidget [name params widget]
   `(defn ~name ~params
-     (let [tab-folder# (.tab_folder (current-frame))
-           widget# (proxy [Widget] []
-                     (createControl [tab-folder# tab-item#]
-                       (~body tab-folder# tab-item#)))]
-       (doto widget#
-         (.create tab-folder#)))))
+     (doto ~widget
+       (.create))))
 
-(defmacro defmenu [name string body]
-  `(defn ~name
-     ([] (~name (count (.. (current-frame) menu_bar getItems))))
-     ([index#]
-        (let [menu# (proxy [Menu] []
-                      (createMenu [menu#]
-                        (~body menu#)))]
-          (doto menu#
-            (.create (current-frame) index# ~string))))))
+(defmacro defmenu [name params menu]
+  `(defn ~name ~params ~menu))
 
-(defn make-menu-item [menu name fn property]
-  (MenuItem. menu name fn (.value property)))
+(defn message [text string]
+  (.setText text string))
 
-(defn make-separator [menu] (MenuItem/separator menu))
+(defn end-of-line [text]
+  (.setSelection text (.getCharCount text)))
 
-(defn message [string]
-  (.message (.command_line (current-frame)) string))
-
-(defn end-of-line
-  ([]
-     (end-of-line (.control (current-frame))))
-  ([text]
-     (.setSelection text (.getCharCount text))))
+(defn find-vars [x] (remove nil? (map (comp find-var symbol #(str % \/ x)) (all-ns))))

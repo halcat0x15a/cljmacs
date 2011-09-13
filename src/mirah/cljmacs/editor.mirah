@@ -1,12 +1,6 @@
 import org.eclipse.swt.custom.*
-
+/*
 class Editor
-  implements Macros
-
-  attr_reader :text
-  attr_accessor :saved, :boolean
-  attr_reader :path
-
   def initialize(tab_folder: CTabFolder, tab_item: CTabItem, path: String, string: String)
     @@editor = self
     @saved = true
@@ -31,3 +25,4 @@ class Editor
     @tab_item.setText(path)
   end
 end
+*/

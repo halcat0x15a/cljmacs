@@ -1,15 +1,18 @@
 class Property
-  implements Macros
-
-  attr_reader :value
+  include Configuration
 
   def initialize(key: String, value: dynamic)
     @key = key
-    self.value = value
+    config = get_configuration
+    self.value = config.containsKey(key) ? config.getProperty(key) : value
+  end
+
+  def value
+    @value
   end
 
   def value_set(value: dynamic): void
-    Configuration.get_configuration.setProperty @key, value
+    get_configuration.setProperty @key, value
     @value = value
   end
 end

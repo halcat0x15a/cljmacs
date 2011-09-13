@@ -15,8 +15,8 @@
 (defn -main [& args]
   (let [display (Display.)]
     (try
-      (let [#^Frame frame (make-frame display)
-            #^Shell shell (.shell frame)]
+      (let [frame (make-frame display)
+            shell (.shell frame)]
         (load-cljmacs)
         (.open shell)
         (while (not (.isDisposed shell))

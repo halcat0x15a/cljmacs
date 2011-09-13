@@ -7,3 +7,6 @@
     (testing "key"
       (testing "should be user.test"
         (is (= key "user.test"))))))
+
+(deftest definition
+  (testing "widget"))
