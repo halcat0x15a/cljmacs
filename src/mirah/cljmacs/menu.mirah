@@ -4,11 +4,11 @@ import org.eclipse.swt.widgets.Menu as SWTMenu
 import org.eclipse.swt.widgets.*
 
 class Menu
-  def initialize(frame: Frame, text: String, index: int)
+  def initialize(frame: Frame, text: String)
     shell = frame.shell
     @menu = SWTMenu.new shell, SWT.DROP_DOWN
     menu_bar = shell.getMenuBar
-    menu_item = MenuItem.new menu_bar, SWT.CASCADE, index
+    menu_item = MenuItem.new menu_bar, SWT.CASCADE
     menu_item.setText text
     menu_item.setMenu @menu
   end

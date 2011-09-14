@@ -40,8 +40,12 @@
     (.addSelectionListener text (proxy [SelectionAdapter] []
                                   (widgetDefaultSelected [e]
                                     (let [text (.widget e)
-                                          vars (find-vars (symbol (.getText text)))]
-                                      (when-let [v (first vars)]
-                                        (v frame)
-                                        (.setText text ""))))))
+                                          data (.getData text)
+                                          string (.getText text)]
+                                      (if-let [data data]
+                                        (when (fn? data)
+                                          (run-or-apply text data string))
+                                        (let [vars (find-vars (symbol string))]
+                                          (when-let [function (var-get (first vars))]
+                                            (run-or-apply text function frame))))))))
     frame))

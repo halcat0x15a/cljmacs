@@ -2,14 +2,14 @@
 package cljmacs;
 public class Menu extends java.lang.Object {
   private org.eclipse.swt.widgets.Menu menu;
-  public  Menu(cljmacs.Frame frame, java.lang.String text, int index) {
+  public  Menu(cljmacs.Frame frame, java.lang.String text) {
     org.eclipse.swt.widgets.Shell shell = null;
     org.eclipse.swt.widgets.Menu menu_bar = null;
     org.eclipse.swt.widgets.MenuItem menu_item = null;
     shell = frame.shell();
     this.menu = new org.eclipse.swt.widgets.Menu(shell, org.eclipse.swt.SWT.DROP_DOWN);
     menu_bar = shell.getMenuBar();
-    menu_item = new org.eclipse.swt.widgets.MenuItem(menu_bar, org.eclipse.swt.SWT.CASCADE, index);
+    menu_item = new org.eclipse.swt.widgets.MenuItem(menu_bar, org.eclipse.swt.SWT.CASCADE);
     org.eclipse.swt.widgets.MenuItem temp$1 = menu_item;
     temp$1.setText(text);
     org.eclipse.swt.widgets.MenuItem temp$2 = menu_item;

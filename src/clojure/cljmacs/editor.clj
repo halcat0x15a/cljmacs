@@ -30,7 +30,7 @@
 (def path-key "path")
 
 (defwidget editor [frame path]
-  (proxy [Widget] [(.tab_folder frame)]
+  (proxy [Widget] [frame]
     (create_control [tab-folder tab-item]
       (let [name (if (nil? path)
                    "Undefined"
@@ -96,17 +96,17 @@
 (defaction select-all selectAll)
 
 (defmenu file-menu [frame]
-  (doto (Menu. frame "&File" 0)
-    (.create_item "&New File" #(new-file frame) @new-file-key)
-    (.create_item "&Open" #(open frame) @open-key)
+  (doto (Menu. frame "&File")
+    (.create_item "&New File" (menu-run-or-apply frame new-file) @new-file-key)
+    (.create_item "&Open" (menu-run-or-apply frame open) @open-key)
     (.create-separator)
-    (.create_item "&Save" #(save frame) @save-key)
-    (.create_item "Save &As" #(save-as frame) @save-as-key)))
+    (.create_item "&Save" (menu-run-or-apply frame save) @save-key)
+    (.create_item "Save &As" (menu-run-or-apply frame save-as) @save-as-key)))
 
 (defmenu edit-menu [frame]
-  (doto (Menu. frame "&Edit" 1)
-    (.create_item "&Cut" #(cut frame) @cut-key)
-    (.create_item "&Copy" #(copy frame) @copy-key)
-    (.create_item "&Paste" #(paste frame) @paste-key)
+  (doto (Menu. frame "&Edit")
+    (.create_item "&Cut" (menu-run-or-apply frame cut) @cut-key)
+    (.create_item "&Copy" (menu-run-or-apply frame copy) @copy-key)
+    (.create_item "&Paste" (menu-run-or-apply frame paste) @paste-key)
     (.create-separator)
-    (.create_item "&Select All" #(select-all frame) @select-all-key)))
+    (.create_item "&Select All" (menu-run-or-apply frame select-all) @select-all-key)))

@@ -13,7 +13,7 @@
 (defshortcut open-url-key \O ctrl alt)
 
 (defwidget browser [frame url]
-  (proxy [Widget] [(.tab_folder frame)]
+  (proxy [Widget] [frame]
     (create_control [tab-folder tab-item]
       (let [text (.text frame)]
         (doto (Browser. tab-folder @browser-style)
@@ -36,6 +36,6 @@
     (.setUrl browser url)))
 
 (defmenu browser-menu [frame]
-  (doto (Menu. frame "&Browser" 0)
-    (.create_item "&Homepage" #(open-homepage frame) @open-homepage-key)
-    (.create_item "&Open URL" #(open-url frame) @open-url-key)))
+  (doto (Menu. frame "&Browser")
+    (.create_item "&Homepage" (menu-run-or-apply frame open-homepage) @open-homepage-key)
+    (.create_item "&Open URL" (menu-run-or-apply frame open-url) @open-url-key)))

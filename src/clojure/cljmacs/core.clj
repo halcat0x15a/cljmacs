@@ -29,16 +29,28 @@
 (defmacro defshortcut [name character & modifiers]
   `(defproperty ~name (create-shortcut-key ~character ~@modifiers)))
 
-(defmacro defun [name params body]
-  `(def ~name (with-meta (fn ~params ~body) {:frame true})))
+(defn run-or-apply [text function arg]
+  (let [size (:size (meta function))]
+    (if (= size 1)
+      (function arg)
+      (doto text
+        (.setData text (with-meta (partial function arg) {:size (dec size)}))
+        (.setFocus)))
+    (.setText text "")))
 
-(defmacro defwidget [name params widget]
-  `(defun ~name ~params
+(defn menu-run-or-apply [frame function]
+  #(run-or-apply (.text frame) function frame))
+
+(defmacro defun [name parameter body]
+  `(def ~name (with-meta (fn ~parameter ~body) {:size (count '~parameter)})))
+
+(defmacro defwidget [name parameter widget]
+  `(defun ~name ~parameter
      (doto ~widget
        (.create))))
 
-(defmacro defmenu [name params menu]
-  `(defun ~name ~params ~menu))
+(defmacro defmenu [name parameter menu]
+  `(defun ~name ~parameter ~menu))
 
 (defn message [text string]
   (.setText text string))
