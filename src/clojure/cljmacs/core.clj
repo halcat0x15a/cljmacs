@@ -29,13 +29,16 @@
 (defmacro defshortcut [name character & modifiers]
   `(defproperty ~name (create-shortcut-key ~character ~@modifiers)))
 
+(defmacro defun [name params body]
+  `(def ~name (with-meta (fn ~params ~body) {:frame true})))
+
 (defmacro defwidget [name params widget]
-  `(defn ~name ~params
+  `(defun ~name ~params
      (doto ~widget
        (.create))))
 
 (defmacro defmenu [name params menu]
-  `(defn ~name ~params ~menu))
+  `(defun ~name ~params ~menu))
 
 (defn message [text string]
   (.setText text string))

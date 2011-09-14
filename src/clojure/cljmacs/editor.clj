@@ -49,9 +49,9 @@
           (.setText name))
         text))))
 
-(defn new-file [frame] (editor frame nil))
+(defun new-file [frame] (editor frame nil))
 
-(defn open [frame]
+(defun open [frame]
   (let [dialog (FileDialog. (.shell frame) SWT/OPEN)]
     (if-let [path (.open dialog)]
       (editor frame path))))
@@ -61,7 +61,7 @@
     (spit path (.getText text))
     (.setData text saved-key true)))
 
-(defn save-as [frame]
+(defun save-as [frame]
   (let [dialog (FileDialog. (.shell frame) SWT/SAVE)]
     (if-let [path (.open dialog)]
       (let [file (file path)
@@ -77,14 +77,14 @@
             (message (str path " is not file.")))
           (save))))))
 
-(defn save [frame]
+(defun save [frame]
   (let [text (.getData (.tab_folder frame) "widget")]
     (if-let [path (.getData text path-key)]
       (save-text text path)
       (save-as frame))))
 
 (defmacro defaction [name action]
-  `(defn ~name [frame#]
+  `(defun ~name [frame#]
      (.. frame# tab_folder (getData "widget") control ~action)))
 
 (defaction cut cut)

@@ -14,7 +14,7 @@ public class Configuration extends java.lang.Object {
         temp$1.setAutoSave(true);
         return temp$1;
       }
-      catch (org.apache.commons.configuration.ConfigurationException e$2020) {
+      catch (org.apache.commons.configuration.ConfigurationException e$2012) {
         return null;
       }
     }

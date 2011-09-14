@@ -17,11 +17,11 @@
 
 (defshortcut quit \Q ctrl alt)
 
-(defn close-tab [frame]
+(defun close-tab [frame]
   (.. frame tab_fodler getSelection dispose))
 
-(defn quit [frame]
-  (.close (.shell frame)))
+(defun quit [frame]
+  (.. frame shell close))
 
 (defn make-frame [display]
   (let [[width height] @size
@@ -41,5 +41,7 @@
                                   (widgetDefaultSelected [e]
                                     (let [text (.widget e)
                                           vars (find-vars (symbol (.getText text)))]
-                                      ((first vars) frame)))))
+                                      (when-let [v (first vars)]
+                                        (v frame)
+                                        (.setText text ""))))))
     frame))

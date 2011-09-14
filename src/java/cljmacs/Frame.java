@@ -18,4 +18,9 @@ public class Frame extends java.lang.Object {
   public org.eclipse.swt.widgets.Text text() {
     return this.text;
   }
+  public org.eclipse.swt.widgets.Control control() {
+    org.eclipse.swt.custom.CTabItem tab_item = null;
+    tab_item = this.tab_folder.getSelection();
+    return (tab_item != null) ? (tab_item.getControl()) : (null);
+  }
 }
