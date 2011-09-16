@@ -1,13 +1,12 @@
 (ns cljmacs.test.shortcut-key
-  (:use [cljmacs.core]
-        [clojure.test])
+  (:use [clojure.test])
   (:import [org.eclipse.swt SWT]
            [cljmacs ModifierKey ShortcutKey]))
 
 (deftest shortcut-key
-  (let [shortcut-key (create-shortcut-key \S ctrl shift)]
+  (let [shortcut-key (ShortcutKey. \S (into-array ModifierKey [(ModifierKey/ctrl) (ModifierKey/shift)]))]
     (testing "shortcut key"
-      (testing "has accelerator"
+      (testing "accelerator should be Ctrl+Shift+S"
         (is (= (+ SWT/CTRL SWT/SHIFT (int \S)) (.accelerator shortcut-key))))
-      (testing "has string"
+      (testing "string should be Ctrl+Shift+S"
         (is (= "Ctrl+Shift+S" (.toString shortcut-key)))))))

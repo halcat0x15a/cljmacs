@@ -8,9 +8,11 @@
            [cljmacs Frame]))
 
 (defn load-cljmacs []
-  (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")]
-    (when (.exists (file path))
-      (load-file path))))
+  (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")
+        file (file path)]
+    (if (.exists file)
+      (load-file path)
+      (slurp file ""))))
 
 (defn -main [& args]
   (let [display (Display.)]

@@ -5,7 +5,7 @@
            [org.eclipse.swt.custom StyledText]
            [org.eclipse.swt.events VerifyListener]
            [org.eclipse.swt.widgets FileDialog]
-           [cljmacs Widget Menu]))
+           [cljmacs Widget]))
 
 (defstyle editor-style SWT/MULTI SWT/BORDER)
 
@@ -49,7 +49,9 @@
           (.setText name))
         text))))
 
-(defun new-file [frame] (editor frame nil))
+(defun new-file [frame]
+  (editor frame nil)
+  (message frame "new file"))
 
 (defun open [frame]
   (let [dialog (FileDialog. (.shell frame) SWT/OPEN)]
@@ -74,7 +76,7 @@
         (if (.exists file)
           (if (.isFile file)
             (save)
-            (message (str path " is not file.")))
+            (message frame (str path " is not file.")))
           (save))))))
 
 (defun save [frame]
@@ -95,18 +97,20 @@
 
 (defaction select-all selectAll)
 
-(defmenu file-menu [frame]
-  (doto (Menu. frame "&File")
-    (.create_item "&New File" (menu-run-or-apply frame new-file) @new-file-key)
-    (.create_item "&Open" (menu-run-or-apply frame open) @open-key)
-    (.create-separator)
-    (.create_item "&Save" (menu-run-or-apply frame save) @save-key)
-    (.create_item "Save &As" (menu-run-or-apply frame save-as) @save-as-key)))
+(defun file-menu [frame]
+  (let [shell (.shell frame)]
+    (create-menu shell (.getMenuBar shell) "&File"
+                 (create-item "&New File" new-file frame @new-file-key)
+                 (create-item "&Open" open frame @open-key)
+                 (create-item)
+                 (create-item "&Save" save frame @save-key)
+                 (create-item "Save &As" save-as frame @save-as-key))))
 
-(defmenu edit-menu [frame]
-  (doto (Menu. frame "&Edit")
-    (.create_item "&Cut" (menu-run-or-apply frame cut) @cut-key)
-    (.create_item "&Copy" (menu-run-or-apply frame copy) @copy-key)
-    (.create_item "&Paste" (menu-run-or-apply frame paste) @paste-key)
-    (.create-separator)
-    (.create_item "&Select All" (menu-run-or-apply frame select-all) @select-all-key)))
+(defun edit-menu [frame]
+  (let [shell (.shell frame)]
+    (create-menu shell (.getMenuBar shell) "&Edit"
+                 (create-item "&Cut" cut @cut-key)
+                 (create-item "&Copy" copy @copy-key)
+                 (create-item "&Paste" paste @paste-key)
+                 (create-item)
+                 (create-item "&Select All" select-all @select-all-key))))

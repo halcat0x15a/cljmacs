@@ -133,13 +133,14 @@
     (.setOAuthAccessToken twitter access-token)
     (home-timeline frame)))
 
-(defmenu twitter-menu [frame]
-  (doto (Menu. frame "&Twitter")
-    (.create_item "&Home Timeline" (menu-run-or-apply frame home-timeline) @home-timeline-key)
-    (.create_item "&Mentions" (menu-run-or-apply frame mentions))
-    (.create_item "Retweeted &By Me" (menu-run-or-apply frame retweets-of-me))
-    (.create_item "Retweeted &To Me" (menu-run-or-apply frame retweeted-to-me))
-    (.create_item "Retweets &Of Me" (menu-run-or-apply frame retweets-of-me))
-    (.create_separator)
-    (.create_item "&Login" (menu-run-or-apply frame login))
-    (.create_item "&Auth" (menu-run-or-apply frame auth))))
+(defun twitter-menu [frame]
+  (let [shell (.shell frame)]
+    (create-menu shell (.getMenuBar shell) "&Twitter"
+                 (create-item "&Home Timeline" home-timeline frame @home-timeline-key)
+                 (create-item "&Mentions" mentions frame)
+                 (create-item "Retweeted &By Me" retweets-of-me frame)
+                 (create-item "Retweeted &To Me" retweeted-to-me frame)
+                 (create-item "Retweets &Of Me" retweets-of-me frame)
+                 (create-item)
+                 (create-item "&Login" login frame)
+                 (create-item "&Auth" auth frame))))

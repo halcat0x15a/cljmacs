@@ -39,13 +39,5 @@
     (.setMenuBar shell menu-bar)
     (.addSelectionListener text (proxy [SelectionAdapter] []
                                   (widgetDefaultSelected [e]
-                                    (let [text (.widget e)
-                                          data (.getData text)
-                                          string (.getText text)]
-                                      (if-let [data data]
-                                        (when (fn? data)
-                                          (run-or-apply text data string))
-                                        (let [vars (find-vars (symbol string))]
-                                          (when-let [function (var-get (first vars))]
-                                            (run-or-apply text function frame))))))))
+                                    (eval-text frame))))
     frame))

@@ -35,7 +35,8 @@
         url (.. frame text getText)]
     (.setUrl browser url)))
 
-(defmenu browser-menu [frame]
-  (doto (Menu. frame "&Browser")
-    (.create_item "&Homepage" (menu-run-or-apply frame open-homepage) @open-homepage-key)
-    (.create_item "&Open URL" (menu-run-or-apply frame open-url) @open-url-key)))
+(defun browser-menu [frame]
+  (let [shell (.shell frame)]
+    (create-menu shell (.getMenuBar shell) "&Browser"
+                 (create-item "&Homepage" frame open-homepage) @open-homepage-key)
+    (create-item "&Open URL" frame open-url @open-url-key)))
