@@ -1,9 +1,10 @@
 (ns cljmacs.core
-  (:require [clojure.string])
+  (:use [clojure.java.io :only (file)])
   (:import [clojure.lang IDeref]
+           [org.apache.commons.lang SystemUtils]
            [org.eclipse.swt SWT]
            [org.eclipse.swt.events SelectionAdapter]
-           [org.eclipse.swt.widgets Menu MenuItem]
+           [org.eclipse.swt.widgets Shell Menu MenuItem]
            [cljmacs Property ModifierKey ShortcutKey Widget]))
 
 (defn create-key [name]
@@ -40,7 +41,9 @@
   (and (fn? fun) (:fun (meta fun))))
 
 (defn run-or-apply [text function arg]
-  (.setText text "")
+  (doto text
+    (.setText "")
+    (.setData nil))
   (let [size (:size (meta function))]
     (if (= size 1)
       (function arg)
@@ -54,26 +57,56 @@
         string (.getText text)]
     (if (nil? data)
       (let [vars (find-vars (symbol string))]
-        (when-let [function (var-get (first vars))]
-          (when (fun? function)
-            (run-or-apply text function frame))))
+        (when-let [v (first vars)]
+          (when-let [function (var-get v)]
+            (when (fun? function)
+              (run-or-apply text function frame)))))
       (when (fun? data)
         (run-or-apply text data string)))))
 
 (defmacro defun [name parameter & body]
   `(def ~name (fun (fn ~parameter ~@body) (count '~parameter))))
 
+(defun load-cljmacs [frame]
+  (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")
+        file (file path)]
+    (if (.exists file)
+      (load-file path)
+      (spit file ""))))
+
+(defmacro defwidgetm [name parameter id body-fn]
+  `(defun ~name ~parameter
+     (let [frame# ~(first parameter)]
+       (if-let [tab-item# (.. frame# tab_folder getSelection)]
+         (if (= (.getData tab-item#) ~id)
+           (~body-fn (.getControl tab-item#))
+           (message frame# (str (subs (str ~id) 1) " does not exist")))
+         (message frame# "no tab")))))
+
 (defmacro defwidget [name parameter widget]
   `(defun ~name ~parameter
-     (doto ~widget
-       (.create))))
+     (let [widget# (doto ~widget
+                     (.create))]
+       (doto (.tab_item widget#)
+         (.setData (keyword '~name)))
+       widget#)))
 
-(defmacro create-menu [parent menu string & items]
-  `(let [menu# (Menu. ~parent SWT/DROP_DOWN)]
-     (doto (MenuItem. ~menu SWT/CASCADE)
-       (.setText ~string)
-       (.setMenu menu#))
-     (doto menu# ~@items)))
+(defn create-menu-item [parent-menu menu string]
+  (doto (MenuItem. parent-menu SWT/CASCADE)
+    (.setText string)
+    (.setMenu menu)))
+
+(defmulti create-menu (fn [widget _] (class widget)))
+
+(defmethod create-menu Shell [shell string]
+  (let [menu (Menu. shell SWT/DROP_DOWN)]
+    (create-menu-item (.getMenuBar shell) menu string)
+    menu))
+
+(defmethod create-menu Menu [parent-menu string]
+  (let [menu (Menu. parent-menu)]
+    (create-menu-item parent-menu menu string)
+    menu))
 
 (defn create-item
   ([menu] (MenuItem. menu SWT/SEPARATOR))

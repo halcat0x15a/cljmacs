@@ -1,25 +1,22 @@
 (ns cljmacs.main
   (:gen-class)
-  (:use [clojure.java.io :only (file)]
-        [cljmacs.core]
-        [cljmacs.frame])
-  (:import [org.apache.commons.lang SystemUtils]
-           [org.eclipse.swt.widgets Display Shell]
-           [cljmacs Frame]))
-
-(defn load-cljmacs []
-  (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")
-        file (file path)]
-    (if (.exists file)
-      (load-file path)
-      (slurp file ""))))
+  (:use [cljmacs.core]
+        [cljmacs.frame]
+        [cljmacs.editor :only (file-menu edit-menu)]
+        [cljmacs.browser :only (browser-menu)]
+        [cljmacs.twitter :only (twitter-menu)])
+  (:import [org.eclipse.swt.widgets Display]))
 
 (defn -main [& args]
   (let [display (Display.)]
     (try
       (let [frame (make-frame display)
             shell (.shell frame)]
-        (load-cljmacs)
+        (load-cljmacs frame)
+        (file-menu frame)
+        (edit-menu frame)
+        (browser-menu frame)
+        (twitter-menu frame)
         (.open shell)
         (while (not (.isDisposed shell))
           (when-not (.readAndDispatch display)

@@ -20,8 +20,12 @@ class Frame
     @text
   end
 
+  def tab_item
+    tab_folder.getSelection
+  end
+
   def control
-    tab_item = @tab_folder.getSelection
+    tab_item = self.tab_item
     tab_item.getControl if tab_item != nil
   end
 end

@@ -2,7 +2,7 @@
   (:use [cljmacs.core])
   (:import [org.eclipse.swt SWT]
            [org.eclipse.swt.custom CTabFolder]
-           [org.eclipse.swt.events SelectionAdapter]
+           [org.eclipse.swt.events SelectionAdapter KeyAdapter]
            [org.eclipse.swt.layout GridLayout GridData]
            [org.eclipse.swt.widgets Shell Menu Text]
            [cljmacs Frame]))
@@ -37,7 +37,13 @@
                (.setLayoutData (GridData. SWT/FILL SWT/END true false)))
         frame (Frame. shell tab-folder text)]
     (.setMenuBar shell menu-bar)
-    (.addSelectionListener text (proxy [SelectionAdapter] []
-                                  (widgetDefaultSelected [e]
-                                    (eval-text frame))))
+    (doto text
+      (.addSelectionListener (proxy [SelectionAdapter] []
+                               (widgetDefaultSelected [e]
+                                 (eval-text frame))))
+      (.addKeyListener (proxy [KeyAdapter] []
+                         (keyPressed [e]
+                           (when (= (.keyCode e) (int SWT/ESC))
+                             (.. e widget (setData nil))
+                             (message frame "cancel"))))))
     frame))

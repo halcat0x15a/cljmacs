@@ -63,31 +63,31 @@
     (spit path (.getText text))
     (.setData text saved-key true)))
 
-(defun save-as [frame]
-  (let [dialog (FileDialog. (.shell frame) SWT/SAVE)]
-    (if-let [path (.open dialog)]
-      (let [file (file path)
-            widget (.getData (.tab_folder frame) "widget") ;error
-            text (.control widget)
-            save (fn []
-                   (save-text editor path)
-                   (.setData text path-key path)
-                   (.. widget tab_item (setText path)))]
-        (if (.exists file)
-          (if (.isFile file)
-            (save)
-            (message frame (str path " is not file.")))
-          (save))))))
+(defwidgetm save-as [frame] :editor
+  (fn [text]
+    (let [dialog (FileDialog. (.shell frame) SWT/SAVE)]
+      (if-let [path (.open dialog)]
+        (let [file (file path)
+              save (fn []
+                     (save-text text path)
+                     (.setData text path-key path)
+                     (.. frame tab_item (setText path)))]
+          (if (.exists file)
+            (if (.isFile file)
+              (save)
+              (message frame (str path " is not file.")))
+            (save)))))))
 
-(defun save [frame]
-  (let [text (.getData (.tab_folder frame) "widget")]
+(defwidgetm save [frame] :editor
+  (fn [text]
     (if-let [path (.getData text path-key)]
       (save-text text path)
       (save-as frame))))
 
 (defmacro defaction [name action]
-  `(defun ~name [frame#]
-     (.. frame# tab_folder (getData "widget") control ~action)))
+  `(defwidgetm ~name [frame#] :editor
+     (fn [control#]
+       (. control# ~action))))
 
 (defaction cut cut)
 
@@ -98,19 +98,19 @@
 (defaction select-all selectAll)
 
 (defun file-menu [frame]
-  (let [shell (.shell frame)]
-    (create-menu shell (.getMenuBar shell) "&File"
-                 (create-item "&New File" new-file frame @new-file-key)
-                 (create-item "&Open" open frame @open-key)
-                 (create-item)
-                 (create-item "&Save" save frame @save-key)
-                 (create-item "Save &As" save-as frame @save-as-key))))
+  (let [menu (create-menu (.shell frame) "&File")]
+    (doto menu
+      (create-item "&New File" new-file frame @new-file-key)
+      (create-item "&Open" open frame @open-key)
+      (create-item)
+      (create-item "&Save" save frame @save-key)
+      (create-item "Save &As" save-as frame @save-as-key))))
 
 (defun edit-menu [frame]
-  (let [shell (.shell frame)]
-    (create-menu shell (.getMenuBar shell) "&Edit"
-                 (create-item "&Cut" cut @cut-key)
-                 (create-item "&Copy" copy @copy-key)
-                 (create-item "&Paste" paste @paste-key)
-                 (create-item)
-                 (create-item "&Select All" select-all @select-all-key))))
+  (let [menu (create-menu (.shell frame) "&Edit")]
+    (doto menu
+      (create-item "&Cut" cut frame @cut-key)
+      (create-item "&Copy" copy frame @copy-key)
+      (create-item "&Paste" paste frame @paste-key)
+      (create-item)
+      (create-item "&Select All" select-all frame @select-all-key))))

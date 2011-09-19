@@ -15,6 +15,14 @@ abstract class Widget
     tab_folder.setSelection @tab_item
   end
 
+  def control
+    @control
+  end
+
+  def tab_item
+    @tab_item
+  end
+
   abstract def create_control(tab_folder: CTabFolder, tab_item: CTabItem): Control
   end
 end

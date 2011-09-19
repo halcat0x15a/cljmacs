@@ -17,6 +17,12 @@ public abstract class Widget extends java.lang.Object {
     org.eclipse.swt.custom.CTabFolder temp$2 = tab_folder;
     temp$2.setSelection(this.tab_item);
   }
+  public org.eclipse.swt.widgets.Control control() {
+    return this.control;
+  }
+  public org.eclipse.swt.custom.CTabItem tab_item() {
+    return this.tab_item;
+  }
   public org.eclipse.swt.widgets.Control create_control(org.eclipse.swt.custom.CTabFolder tab_folder, org.eclipse.swt.custom.CTabItem tab_item) {
     return null;
   }

@@ -8,35 +8,59 @@
 
 (defproperty homepage "http://google.com/")
 
+(defproperty search-query "http://www.google.com/search?&q=")
+
+(defproperty javascript-enabled true)
+
+(defshortcut back-key \B ctrl alt)
+
+(defshortcut forward-key \F ctrl alt)
+
+(defshortcut refresh-key \R ctrl alt)
+
+(defshortcut stop-key \S ctrl alt)
+
 (defshortcut open-homepage-key \H ctrl alt)
 
-(defshortcut open-url-key \O ctrl alt)
+(defshortcut web-search-key \S ctrl alt shift)
 
-(defwidget browser [frame url]
+(defwidget web-browser [frame url]
   (proxy [Widget] [frame]
     (create_control [tab-folder tab-item]
       (let [text (.text frame)]
         (doto (Browser. tab-folder @browser-style)
           (.addLocationListener (proxy [LocationAdapter] []
                                   (changed [e]
-                                    (message text (.location e)))))
+                                    (message frame (.location e)))))
           (.addTitleListener (proxy [TitleListener] []
                                (changed [e]
                                  (doto tab-item
                                    (.setText (.title e))))))
           (.addProgressListener (proxy [ProgressAdapter] []))
+          (.setJavascriptEnabled @javascript-enabled)
           (.setUrl url))))))
 
-(defun open-homepage [frame]
-  (browser frame @homepage))
+(defmacro defbrowserm [method]
+  `(defwidgetm ~method [frame#] :web-browser
+     (fn [browser#]
+       (. browser# ~method))))
 
-(defun open-url [frame]
-  (let [browser (.. frame control)
-        url (.. frame text getText)]
-    (.setUrl browser url)))
+(defbrowserm back)
+
+(defbrowserm forward)
+
+(defbrowserm refresh)
+
+(defbrowserm stop)
+
+(defun open-homepage [frame]
+  (web-browser frame @homepage))
+
+(defun web-search [frame string]
+  (web-browser frame (str @search-query string)))
 
 (defun browser-menu [frame]
-  (let [shell (.shell frame)]
-    (create-menu shell (.getMenuBar shell) "&Browser"
-                 (create-item "&Homepage" frame open-homepage) @open-homepage-key)
-    (create-item "&Open URL" frame open-url @open-url-key)))
+  (doto (create-menu (.shell frame) "&Browser")
+    (create-item "&Homepage" open-homepage frame @open-homepage-key)
+    (create-item)
+    (create-item "&Search" web-search frame @web-search-key)))
