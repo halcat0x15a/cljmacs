@@ -97,6 +97,9 @@
 
 (defaction select-all selectAll)
 
+(defun open-init-file [frame]
+  (editor frame init-file-path))
+
 (defun file-menu [frame]
   (let [menu (create-menu (.shell frame) "&File")]
     (doto menu

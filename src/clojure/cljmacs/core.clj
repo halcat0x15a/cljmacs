@@ -17,8 +17,16 @@
 (defmacro defproperty [name value]
   `(def ~name (create-property '~name ~value)))
 
-(defmacro defstyle [name & styles]
-  `(defproperty ~name (+ ~@styles)))
+(defn set-property! [property value]
+  (.value_set property value))
+
+(def style (partial reduce bit-or))
+
+(defmacro defstyle [name & values]
+  `(defproperty ~name (style [~@values])))
+
+(defn set-style! [style & values]
+  (set-property! style (style values)))
 
 (def ctrl (ModifierKey/ctrl))
 
@@ -31,6 +39,9 @@
 
 (defmacro defshortcut [name character & modifiers]
   `(defproperty ~name (create-shortcut-key ~character ~@modifiers)))
+
+(defn set-shortcut! [shortcut character & modifiers]
+  (set-property! shortcut (apply create-shortcut-key character modifiers)))
 
 (defn find-vars [x] (remove nil? (map (comp find-var symbol #(str % \/ x)) (all-ns))))
 
@@ -67,12 +78,22 @@
 (defmacro defun [name parameter & body]
   `(def ~name (fun (fn ~parameter ~@body) (count '~parameter))))
 
+(def init-file-path (str SystemUtils/USER_HOME "/" ".cljmacs.clj"))
+
 (defun load-cljmacs [frame]
-  (let [path (str SystemUtils/USER_HOME "/" ".cljmacs.clj")
+  (let [path init-file-path
         file (file path)]
     (if (.exists file)
       (load-file path)
       (spit file ""))))
+
+(defmacro defwidget [name parameter widget]
+  `(defun ~name ~parameter
+     (let [widget# (doto ~widget
+                     (.create))]
+       (doto (.tab_item widget#)
+         (.setData (keyword '~name)))
+       widget#)))
 
 (defmacro defwidgetm [name parameter id body-fn]
   `(defun ~name ~parameter
@@ -82,14 +103,6 @@
            (~body-fn (.getControl tab-item#))
            (message frame# (str (subs (str ~id) 1) " does not exist")))
          (message frame# "no tab")))))
-
-(defmacro defwidget [name parameter widget]
-  `(defun ~name ~parameter
-     (let [widget# (doto ~widget
-                     (.create))]
-       (doto (.tab_item widget#)
-         (.setData (keyword '~name)))
-       widget#)))
 
 (defn create-menu-item [parent-menu menu string]
   (doto (MenuItem. parent-menu SWT/CASCADE)
